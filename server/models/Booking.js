@@ -3,17 +3,24 @@ const mongoose = require('mongoose');
 const bookingSchema = new mongoose.Schema({
   user: { 
     type: mongoose.Schema.Types.ObjectId, 
-    ref: 'User', // This links the booking to a specific User
+    ref: 'User', 
     required: true 
   },
   event: { 
     type: mongoose.Schema.Types.ObjectId, 
-    ref: 'Event', // This links the booking to a specific Event
+    ref: 'Event', 
     required: true 
+  },
+  // --- NEW: Added Quantity Field ---
+  quantity: { 
+    type: Number, 
+    required: true, 
+    default: 1, 
+    min: 1 
   },
   bookingDate: {
     type: Date,
-    default: Date.now // Automatically sets the time of booking
+    default: Date.now
   },
   status: {
     type: String,
