@@ -1,0 +1,24 @@
+# 1. Dependencies (Crucial: Ignores all node_modules everywhere)
+node_modules/
+*/node_modules/
+
+# 2. Local Environment Variables (Keeps your database passwords secret!)
+.env
+.env.local
+
+# 3. System Files (Ignores hidden Mac/Windows desktop files)
+.DS_Store
+Thumbs.db
+
+# 4. Production Build (Ignores the compiled React app)
+client/build/
+build/
+
+# 5. Uploaded Images (Ignores local test images so they don't clutter GitHub)
+server/uploads/*
+!server/uploads/.gitkeep
+
+# 6. Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
