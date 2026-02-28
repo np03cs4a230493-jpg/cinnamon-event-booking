@@ -1,8 +1,0 @@
-# Dependency folders
-node_modules/
-client/node_modules/
-server/node_modules/
-
-# Local environment files
-.env
-.DS_Store
