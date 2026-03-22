@@ -10,6 +10,7 @@ import MyBookings from './pages/MyBookings';
 import Admin from './pages/Admin'; 
 import Footer from './components/Footer';
 import Suggest from './pages/Suggest';
+import Profile from './pages/Profile'; // <--- NEW: IMPORT PROFILE PAGE
 
 function App() {
   return (
@@ -23,6 +24,7 @@ function App() {
         <Route path="/my-bookings" element={<MyBookings />} />
         <Route path="/admin" element={<Admin />} /> 
         <Route path="/suggest" element={<Suggest />} />
+        <Route path="/profile" element={<Profile />} /> {/* <--- NEW: PROFILE ROUTE */}
       </Routes>
       <Footer />
     </Router>
@@ -52,7 +54,6 @@ function Navbar() {
   };
 
   return (
-    // Uses the new .navbar CSS class
     <nav className="navbar">
       <Link to="/" className="nav-brand">
         ☕ Cinnamon & Co.
@@ -69,6 +70,10 @@ function Navbar() {
             {user.role === 'admin' && (
               <Link to="/admin" style={{ color: '#e74c3c' }}>Admin Panel</Link>
             )}
+            
+            {/* --- NEW: PROFILE LINK --- */}
+            <Link to="/profile">My Profile</Link> 
+            
             <Link to="/my-bookings">My Tickets</Link>
             <span style={{ color: '#f1c40f', marginLeft: '20px', fontWeight: 'bold' }}>
               Hi, {user.username}
