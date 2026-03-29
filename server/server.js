@@ -28,6 +28,9 @@ const transporter = nodemailer.createTransport({
   }
 });
 
+const { OAuth2Client } = require('google-auth-library');
+const googleClient = new OAuth2Client("YOUR_CLIENT_ID_HERE"); // <-- We will paste it here later!
+
 // MIDDLEWARE
 app.use(cors({
   origin: "http://localhost:3000", 
@@ -103,6 +106,42 @@ app.post('/api/login', async (req, res) => {
 
     res.json({ message: "Login Successful!", username: user.username, email: user.email, _id: user._id, role: user.role });
   } catch (err) { res.status(500).json({ message: "Server error" }); }
+});
+
+app.post('/api/google-login', async (req, res) => {
+  try {
+    const { token } = req.body;
+    
+    // 1. Verify the token with Google
+    const ticket = await googleClient.verifyIdToken({
+      idToken: token,
+      audience: "YOUR_CLIENT_ID_HERE" // <-- And paste it here later!
+    });
+    
+    const { name, email } = ticket.getPayload();
+
+    // 2. Check if user already exists in our database
+    let user = await User.findOne({ email });
+
+    // 3. If they don't exist, create a new account for them automatically!
+    if (!user) {
+      // Generate a random password since our DB requires one
+      const randomPassword = await bcrypt.hash(Math.random().toString(36).slice(-8), 10);
+      user = new User({
+        username: name,
+        email: email,
+        password: randomPassword,
+        role: 'user'
+      });
+      await user.save();
+    }
+
+    // 4. Send back the user data just like a normal login
+    res.json({ message: "Google Login Successful!", username: user.username, email: user.email, _id: user._id, role: user.role });
+  } catch (err) {
+    console.error("Google Auth Error:", err);
+    res.status(500).json({ message: "Google login failed" });
+  }
 });
 
 // BOOKINGS: CREATE BOOKING & SEND EMAIL
