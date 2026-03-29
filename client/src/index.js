@@ -8,7 +8,7 @@ const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>
     {/* --- NEW: WRAPPED APP IN GOOGLE PROVIDER --- */}
-    <GoogleOAuthProvider clientId="YOUR_CLIENT_ID_HERE">
+    <GoogleOAuthProvider clientId="936864795704-0b0qod9dau9912l81prptrstcdllmlgf.apps.googleusercontent.com">
       <App />
     </GoogleOAuthProvider>
   </React.StrictMode>

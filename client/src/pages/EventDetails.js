@@ -107,7 +107,7 @@ function EventDetails() {
             <div style={{ flex: 1, marginTop: '22px' }}>
               {/* Stripe automatically handles the popup UI! */}
               <StripeCheckout
-                stripeKey="pk_test_51HFAKEKEYTOBYPASSSTRIPEVALIDATION123" // A fake test key just to trigger the UI
+                stripeKey="pk_test_51TGBAZHSmiO8YkaXeL7kxw15MiwDLwiJHyVKTuBY5ReG24wsdvfXSsMlDrVhAD8rMsC5nTGrlLxrEukaMXdI3hde00h0HqZtzq"
                 token={handleBooking} // Calls our function when the user types the test card
                 name="Cinnamon & Co."
                 description={`Tickets for ${event.title}`}
