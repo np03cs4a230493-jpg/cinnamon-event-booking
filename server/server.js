@@ -24,7 +24,7 @@ const transporter = nodemailer.createTransport({
   secure: true,
   auth: {
     user: 'cinnamoncotickets@gmail.com',         // <--- PUT YOUR GMAIL HERE
-    pass: 'gijfqizmrklmozll'   // <--- PUT YOUR GOOGLE APP PASSWORD HERE (no spaces)
+    pass: 'euygaddmlozxpjzj'   // <--- PUT YOUR GOOGLE APP PASSWORD HERE (no spaces)
   }
 });
 
