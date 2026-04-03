@@ -99,21 +99,29 @@ function EventDetails() {
           </div>
 
           {/* --- NEW: STRIPE CHECKOUT BUTTON --- */}
-          {ticketsLeft === 0 ? (
+          {/* --- SMART BUTTON LOGIC --- */}
+          {!localStorage.getItem('user') ? (
+            <div style={{ flex: 1, marginTop: '22px' }}>
+              <button 
+                onClick={() => navigate('/login')}
+                style={{ width: '100%', padding: '15px', fontSize: '18px', backgroundColor: '#2c3e50', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>
+                🔒 Login to Book Tickets
+              </button>
+            </div>
+          ) : ticketsLeft === 0 ? (
             <button disabled style={{ flex: 1, padding: '15px', fontSize: '18px', marginTop: '22px', backgroundColor: '#bdc3c7', color: 'white', border: 'none', borderRadius: '6px', cursor: 'not-allowed', fontWeight: 'bold' }}>
               Sold Out
             </button>
           ) : (
             <div style={{ flex: 1, marginTop: '22px' }}>
-              {/* Stripe automatically handles the popup UI! */}
               <StripeCheckout
                 stripeKey="pk_test_51TGBAZHSmiO8YkaXeL7kxw15MiwDLwiJHyVKTuBY5ReG24wsdvfXSsMlDrVhAD8rMsC5nTGrlLxrEukaMXdI3hde00h0HqZtzq"
-                token={handleBooking} // Calls our function when the user types the test card
+                token={handleBooking} 
                 name="Cinnamon & Co."
                 description={`Tickets for ${event.title}`}
-                amount={totalPrice * 100} // Stripe calculates in pennies/cents
+                amount={totalPrice * 100} 
                 currency="NPR"
-                image="https://cdn-icons-png.flaticon.com/512/924/924514.png" // Coffee cup icon
+                image="https://cdn-icons-png.flaticon.com/512/924/924514.png" 
               >
                 <button style={{ width: '100%', padding: '15px', fontSize: '18px', backgroundColor: '#6772e5', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', boxShadow: '0 4px 6px rgba(103, 114, 229, 0.2)', transition: 'transform 0.2s' }}
                         onMouseOver={(e) => e.target.style.transform = 'translateY(-2px)'}

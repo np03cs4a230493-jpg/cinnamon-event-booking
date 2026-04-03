@@ -1,3 +1,4 @@
+import './App.css';
 import React, { useState, useEffect, useRef } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useNavigate } from 'react-router-dom';
 
@@ -66,28 +67,32 @@ function Navbar() {
     navigate('/login');
   };
 
-  return (
-    <nav className="navbar">
-      <Link to="/" className="nav-brand">
+return (
+    <nav style={{ 
+      display: 'flex', justifyContent: 'space-between', alignItems: 'center', 
+      padding: '15px 40px', backgroundColor: '#2c3e50', color: 'white', 
+      boxShadow: '0 2px 10px rgba(0,0,0,0.1)', marginBottom: '30px' 
+    }}>
+      <Link to="/" style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'white', textDecoration: 'none' }}>
         ☕ Cinnamon & Co.
       </Link>
       
-      <div className="nav-links" style={{ display: 'flex', alignItems: 'center' }}>
-        <Link to="/">Home</Link>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+        <Link to="/" style={{ color: 'white', textDecoration: 'none', fontWeight: '500' }}>Home</Link>
         {(!user || user.role !== 'admin') && (
-           <Link to="/suggest" style={{ marginRight: '15px' }}>Suggest Idea</Link>
+           <Link to="/suggest" style={{ color: 'white', textDecoration: 'none', fontWeight: '500' }}>Suggest Idea</Link>
         )}
         
         {user ? (
           <>
             {user.role === 'admin' && (
-              <Link to="/admin" style={{ color: '#e74c3c' }}>Admin Panel</Link>
+              <Link to="/admin" style={{ color: '#e74c3c', textDecoration: 'none', fontWeight: 'bold' }}>Admin Panel</Link>
             )}
             
-            <Link to="/my-bookings">My Tickets</Link>
+            <Link to="/my-bookings" style={{ color: 'white', textDecoration: 'none', fontWeight: '500' }}>My Tickets</Link>
 
-            {/* --- UPGRADED DROPDOWN MENU --- */}
-            <div style={{ position: 'relative', marginLeft: '20px' }} ref={dropdownRef}>
+            {/* --- DROPDOWN MENU --- */}
+            <div style={{ position: 'relative', marginLeft: '10px' }} ref={dropdownRef}>
               <button 
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                 style={{ 
@@ -114,29 +119,23 @@ function Navbar() {
                     to="/profile" 
                     onClick={() => setIsDropdownOpen(false)}
                     style={{ padding: '12px 20px', color: '#2c3e50', textDecoration: 'none', borderBottom: '1px solid #eee', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '10px' }}
-                    onMouseOver={(e) => e.target.style.backgroundColor = '#f8f9fa'}
-                    onMouseOut={(e) => e.target.style.backgroundColor = 'transparent'}
                   >
                     👤 My Profile
                   </Link>
                   <button 
                     onClick={handleLogout} 
                     style={{ padding: '12px 20px', color: '#e74c3c', textDecoration: 'none', background: 'transparent', border: 'none', textAlign: 'left', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '10px', width: '100%', fontSize: '1rem' }}
-                    onMouseOver={(e) => e.target.style.backgroundColor = '#fdf2f0'}
-                    onMouseOut={(e) => e.target.style.backgroundColor = 'transparent'}
                   >
                     🚪 Logout
                   </button>
                 </div>
               )}
             </div>
-            {/* --- END DROPDOWN --- */}
-
           </>
         ) : (
           <>
-            <Link to="/login">Login</Link>
-            <Link to="/signup" style={{ background: '#d35400', padding: '8px 15px', borderRadius: '20px', color: 'white' }}>
+            <Link to="/login" style={{ color: 'white', textDecoration: 'none', fontWeight: '500' }}>Login</Link>
+            <Link to="/signup" style={{ background: '#d35400', padding: '8px 20px', borderRadius: '20px', color: 'white', textDecoration: 'none', fontWeight: 'bold' }}>
               Sign Up
             </Link>
           </>
