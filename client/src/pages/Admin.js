@@ -81,6 +81,17 @@ function Admin() {
   const handleAcknowledge = async (id) => {
     try {
       await axios.patch(`http://localhost:5001/api/suggestions/${id}`, { status: 'accepted' });
+      
+      // --- NEW: Auto-fill the form! ---
+      const acceptedSuggestion = suggestions.find(s => s._id === id);
+      if (acceptedSuggestion) {
+        setTitle(acceptedSuggestion.title);
+        setDescription(acceptedSuggestion.description);
+        
+        // Smoothly scroll down to the Create Event form
+        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+      }
+
       // Update UI instantly
       setSuggestions(suggestions.map(s => 
         s._id === id ? { ...s, status: 'accepted' } : s
@@ -219,7 +230,8 @@ function Admin() {
           
           <div style={{ gridColumn: '1 / -1' }}>
             <label style={labelStyle}>Event Title</label>
-            <input type="text" placeholder="e.g. Latte Art Workshop" required style={inputStyle} onChange={e => setTitle(e.target.value)} />
+            {/* Added value={title} */}
+            <input type="text" value={title} placeholder="e.g. Latte Art Workshop" required style={inputStyle} onChange={e => setTitle(e.target.value)} />
           </div>
 
           <div>
@@ -244,7 +256,8 @@ function Admin() {
 
           <div style={{ gridColumn: '1 / -1' }}>
             <label style={labelStyle}>Description</label>
-            <textarea placeholder="Describe the event details..." required style={{ ...inputStyle, height: '100px', fontFamily: 'inherit' }} onChange={e => setDescription(e.target.value)}></textarea>
+            {/* Added value={description} */}
+            <textarea value={description} placeholder="Describe the event details..." required style={{ ...inputStyle, height: '100px', fontFamily: 'inherit' }} onChange={e => setDescription(e.target.value)}></textarea>
           </div>
 
           <button type="submit" style={buttonStyle}>Publish Event</button>
