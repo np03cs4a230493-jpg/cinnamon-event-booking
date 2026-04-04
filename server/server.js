@@ -59,7 +59,8 @@ app.use('/uploads', express.static('uploads'));
 
 app.get('/api/events', async (req, res) => {
   try {
-    const events = await Event.find().sort({ date: 1 });
+    // -1 means "Descending" (Highest number first)
+    const events = await Event.find().sort({ soldTickets: -1, date: 1 });
     res.json(events);
   } catch (err) { res.status(500).json({ message: err.message }); }
 });

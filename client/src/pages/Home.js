@@ -10,7 +10,21 @@ function Home() {
     const fetchEvents = async () => {
       try {
         const response = await axios.get('http://localhost:5001/api/events');
-        setEvents(response.data);
+        
+        // --- NEW: SMART FRONTEND SORTING ---
+        const smartSortedEvents = response.data.sort((a, b) => {
+          const aSoldOut = (a.totalTickets - (a.soldTickets || 0)) <= 0;
+          const bSoldOut = (b.totalTickets - (b.soldTickets || 0)) <= 0;
+
+          // 1. Push Sold Out events to the very bottom
+          if (aSoldOut && !bSoldOut) return 1;
+          if (!aSoldOut && bSoldOut) return -1;
+
+          // 2. Otherwise, sort by most tickets sold
+          return (b.soldTickets || 0) - (a.soldTickets || 0);
+        });
+
+        setEvents(smartSortedEvents);
         setLoading(false);
       } catch (err) {
         console.error("Error fetching events:", err);
