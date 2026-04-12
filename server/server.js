@@ -233,6 +233,21 @@ app.get('/api/admin/analytics', async (req, res) => {
   } catch (err) { res.status(500).json({ message: "Error fetching analytics" }); }
 });
 
+// --- NEW: FETCH ALL BOOKINGS FOR ADMIN ---
+app.get('/api/admin/bookings', async (req, res) => {
+  try {
+    // .populate() pulls in the actual user and event data instead of just their IDs!
+    const bookings = await Booking.find()
+      .populate('user', 'username email') 
+      .populate('event', 'title date')
+      .sort({ bookingDate: -1 }); // Sort by newest first
+      
+    res.json(bookings);
+  } catch (err) { 
+    res.status(500).json({ message: "Error fetching bookings" }); 
+  }
+});
+
 const SuggestionSchema = new mongoose.Schema({
   username: String, 
   email: String, // <--- NEW: Add email to the schema

@@ -9,6 +9,7 @@ function Admin() {
   const [events, setEvents] = useState([]);
   const [stats, setStats] = useState({ eventStats: [], grandTotal: { revenue: 0, sold: 0 } });
   const [suggestions, setSuggestions] = useState([]);
+  const [bookings, setBookings] = useState([]); // <--- NEW STATE
 
   // Form State
   const [title, setTitle] = useState('');
@@ -21,7 +22,6 @@ function Admin() {
   // --- FETCH DATA ON LOAD ---
   useEffect(() => {
     const fetchData = async () => {
-      // 1. Security Check
       const storedUser = localStorage.getItem('user');
       if (!storedUser || JSON.parse(storedUser).role !== 'admin') {
         navigate('/'); 
@@ -29,16 +29,18 @@ function Admin() {
       }
 
       try {
-        // 2. Fetch All Data in Parallel
-        const [eventRes, statsRes, suggRes] = await Promise.all([
+        // --- NEW: Added the bookings fetch to Promise.all ---
+        const [eventRes, statsRes, suggRes, bookingsRes] = await Promise.all([
           axios.get('http://localhost:5001/api/events'),
           axios.get('http://localhost:5001/api/admin/analytics'),
-          axios.get('http://localhost:5001/api/admin/suggestions')
+          axios.get('http://localhost:5001/api/admin/suggestions'),
+          axios.get('http://localhost:5001/api/admin/bookings') 
         ]);
 
         setEvents(eventRes.data);
         setStats(statsRes.data);
         setSuggestions(suggRes.data);
+        setBookings(bookingsRes.data); // <--- Set the new data
       } catch (err) {
         console.error("Error fetching admin data", err);
       }
@@ -71,17 +73,13 @@ function Admin() {
     try {
       await axios.patch(`http://localhost:5001/api/suggestions/${id}`, { status: 'accepted' });
       
-      // --- NEW: Auto-fill the form! ---
       const acceptedSuggestion = suggestions.find(s => s._id === id);
       if (acceptedSuggestion) {
         setTitle(acceptedSuggestion.title);
         setDescription(acceptedSuggestion.description);
-        
-        // Smoothly scroll down to the Create Event form
         window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
       }
 
-      // Update UI instantly
       setSuggestions(suggestions.map(s => 
         s._id === id ? { ...s, status: 'accepted' } : s
       ));
@@ -92,7 +90,6 @@ function Admin() {
     if (window.confirm("Delete this suggestion permanently?")) {
       try {
         await axios.delete(`http://localhost:5001/api/suggestions/${id}`);
-        // Remove from UI instantly
         setSuggestions(suggestions.filter(s => s._id !== id));
       } catch (err) { alert("Error deleting suggestion"); }
     }
@@ -104,21 +101,18 @@ function Admin() {
 
       {/* --- SECTION 1: ANALYTICS CARDS --- */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px', marginBottom: '40px' }}>
-        {/* Revenue */}
         <div style={cardStyle}>
           <h3 style={{ margin: 0, color: '#7f8c8d', fontSize: '14px' }}>TOTAL REVENUE</h3>
           <p style={{ fontSize: '2rem', fontWeight: 'bold', color: '#27ae60', margin: '10px 0' }}>
             NPR {stats.grandTotal.revenue}
           </p>
         </div>
-        {/* Tickets Sold */}
         <div style={cardStyle}>
           <h3 style={{ margin: 0, color: '#7f8c8d', fontSize: '14px' }}>TICKETS SOLD</h3>
           <p style={{ fontSize: '2rem', fontWeight: 'bold', color: '#d35400', margin: '10px 0' }}>
             {stats.grandTotal.sold}
           </p>
         </div>
-         {/* Active Events */}
          <div style={cardStyle}>
           <h3 style={{ margin: 0, color: '#7f8c8d', fontSize: '14px' }}>ACTIVE EVENTS</h3>
           <p style={{ fontSize: '2rem', fontWeight: 'bold', color: '#2980b9', margin: '10px 0' }}>
@@ -139,33 +133,21 @@ function Admin() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px', marginTop: '20px' }}>
             {suggestions.map(sugg => (
               <div key={sugg._id} style={{ 
-                backgroundColor: '#fff', 
-                padding: '20px', 
-                borderRadius: '8px', 
+                backgroundColor: '#fff', padding: '20px', borderRadius: '8px', 
                 borderLeft: `5px solid ${sugg.status === 'accepted' ? '#27ae60' : '#f1c40f'}`, 
-                boxShadow: '0 2px 5px rgba(0,0,0,0.05)',
-                position: 'relative'
+                boxShadow: '0 2px 5px rgba(0,0,0,0.05)'
               }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
-                  <h4 style={{ margin: '0 0 5px 0', color: '#2c3e50' }}>
-                    {sugg.title} 
-                    {sugg.status === 'accepted' && <span style={{ marginLeft: '10px', fontSize: '0.7rem', backgroundColor: '#27ae60', color: 'white', padding: '2px 6px', borderRadius: '4px' }}>ACCEPTED</span>}
-                  </h4>
-                </div>
-                <p style={{ fontSize: '0.85rem', color: '#95a5a6', marginBottom: '10px' }}>
-                  Suggested by: <strong>{sugg.username}</strong>
-                </p>
-                <p style={{ color: '#555', fontSize: '0.95rem', lineHeight: '1.4' }}>"{sugg.description}"</p>
+                <h4 style={{ margin: '0 0 5px 0', color: '#2c3e50' }}>
+                  {sugg.title} 
+                  {sugg.status === 'accepted' && <span style={{ marginLeft: '10px', fontSize: '0.7rem', backgroundColor: '#27ae60', color: 'white', padding: '2px 6px', borderRadius: '4px' }}>ACCEPTED</span>}
+                </h4>
+                <p style={{ fontSize: '0.85rem', color: '#95a5a6', marginBottom: '10px' }}>By: <strong>{sugg.username}</strong></p>
+                <p style={{ color: '#555', fontSize: '0.95rem' }}>"{sugg.description}"</p>
 
-                {/* Buttons: Only show if NOT accepted yet */}
                 {sugg.status !== 'accepted' && (
                   <div style={{ marginTop: '15px', display: 'flex', gap: '10px' }}>
-                    <button onClick={() => handleAcknowledge(sugg._id)} style={{ ...actionBtnStyle, backgroundColor: '#27ae60' }}>
-                      ✅ Acknowledge
-                    </button>
-                    <button onClick={() => handleDecline(sugg._id)} style={{ ...actionBtnStyle, backgroundColor: '#e74c3c' }}>
-                      ❌ Decline
-                    </button>
+                    <button onClick={() => handleAcknowledge(sugg._id)} style={{ ...actionBtnStyle, backgroundColor: '#27ae60' }}>✅ Acknowledge</button>
+                    <button onClick={() => handleDecline(sugg._id)} style={{ ...actionBtnStyle, backgroundColor: '#e74c3c' }}>❌ Decline</button>
                   </div>
                 )}
               </div>
@@ -174,7 +156,7 @@ function Admin() {
         )}
       </div>
 
-   {/* --- SECTION 3: SALES TABLE --- */}
+      {/* --- SECTION 3: SALES TABLE --- */}
       <h3 style={{ color: '#34495e' }}>Sales Performance</h3>
       <div style={{ overflowX: 'auto' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '50px', backgroundColor: 'white', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 2px 5px rgba(0,0,0,0.05)' }}>
@@ -205,43 +187,66 @@ function Admin() {
         </table>
       </div>
 
+      {/* --- NEW SECTION 3.5: GUEST LIST (BOOKINGS) --- */}
+      <h3 style={{ color: '#34495e' }}>Recent Bookings & Guest List</h3>
+      <div style={{ overflowX: 'auto', marginBottom: '50px' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', backgroundColor: 'white', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 2px 5px rgba(0,0,0,0.05)' }}>
+          <thead>
+            <tr style={{ backgroundColor: '#ecf0f1', textAlign: 'left' }}>
+              <th style={thStyle}>Customer</th>
+              <th style={thStyle}>Event</th>
+              <th style={thStyle}>Tickets</th>
+              <th style={thStyle}>Date Booked</th>
+            </tr>
+          </thead>
+          <tbody>
+            {bookings.length === 0 ? (
+              <tr><td colSpan="4" style={{...tdStyle, textAlign: 'center', color: '#7f8c8d'}}>No bookings yet.</td></tr>
+            ) : (
+              bookings.map((booking, index) => (
+                <tr key={index} style={{ borderBottom: '1px solid #eee' }}>
+                  <td style={tdStyle}>
+                    <strong>{booking.user?.username || 'Unknown'}</strong><br/>
+                    <span style={{ fontSize: '12px', color: '#7f8c8d' }}>{booking.user?.email || 'N/A'}</span>
+                  </td>
+                  <td style={tdStyle}>{booking.event?.title || 'Event Removed'}</td>
+                  <td style={{...tdStyle, fontWeight: 'bold', color: '#d35400'}}>{booking.quantity}</td>
+                  <td style={tdStyle}>{new Date(booking.bookingDate).toLocaleDateString()}</td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+
       {/* --- SECTION 4: ADD EVENT FORM --- */}
       <div style={{ backgroundColor: '#fff', padding: '30px', borderRadius: '12px', boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }}>
         <h3 style={{ marginTop: 0, color: '#2c3e50' }}>Create New Event</h3>
         <form onSubmit={handleSubmit} style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '20px' }}>
-          
           <div style={{ gridColumn: '1 / -1' }}>
             <label style={labelStyle}>Event Title</label>
-            {/* Added value={title} */}
             <input type="text" value={title} placeholder="e.g. Latte Art Workshop" required style={inputStyle} onChange={e => setTitle(e.target.value)} />
           </div>
-
           <div>
             <label style={labelStyle}>Date</label>
             <input type="date" required style={inputStyle} onChange={e => setDate(e.target.value)} />
           </div>
-
           <div>
              <label style={labelStyle}>Event Image</label>
              <input type="file" accept="image/*" style={{ ...inputStyle, padding: '7px' }} onChange={e => setFile(e.target.files[0])} />
           </div>
-
           <div>
             <label style={labelStyle}>Price (NPR)</label>
             <input type="number" placeholder="500" required style={inputStyle} onChange={e => setPrice(e.target.value)} />
           </div>
-
           <div>
             <label style={labelStyle}>Total Tickets</label>
             <input type="number" placeholder="50" required style={inputStyle} onChange={e => setTotalTickets(e.target.value)} />
           </div>
-
           <div style={{ gridColumn: '1 / -1' }}>
             <label style={labelStyle}>Description</label>
-            {/* Added value={description} */}
             <textarea value={description} placeholder="Describe the event details..." required style={{ ...inputStyle, height: '100px', fontFamily: 'inherit' }} onChange={e => setDescription(e.target.value)}></textarea>
           </div>
-
           <button type="submit" style={buttonStyle}>Publish Event</button>
         </form>
       </div>
