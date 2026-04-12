@@ -66,17 +66,6 @@ function Admin() {
     }
   };
 
-  const handleDelete = async (id) => {
-    if (window.confirm("Are you sure you want to delete this event?")) {
-      try {
-        await axios.delete(`http://localhost:5001/api/events/${id}`);
-        window.location.reload();
-      } catch (err) {
-        alert("Error deleting event");
-      }
-    }
-  };
-
   // --- HANDLERS: SUGGESTIONS ---
   const handleAcknowledge = async (id) => {
     try {
@@ -185,7 +174,7 @@ function Admin() {
         )}
       </div>
 
-      {/* --- SECTION 3: SALES TABLE --- */}
+   {/* --- SECTION 3: SALES TABLE --- */}
       <h3 style={{ color: '#34495e' }}>Sales Performance</h3>
       <div style={{ overflowX: 'auto' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '50px', backgroundColor: 'white', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 2px 5px rgba(0,0,0,0.05)' }}>
@@ -193,10 +182,9 @@ function Admin() {
             <tr style={{ backgroundColor: '#ecf0f1', textAlign: 'left' }}>
               <th style={thStyle}>Event</th>
               <th style={thStyle}>Sold</th>
-              <th style={thStyle}>Revenue</th> {/* <--- NEW: Added Header */}
+              <th style={thStyle}>Revenue</th>
               <th style={thStyle}>Remaining</th>
               <th style={thStyle}>Occupancy</th>
-              <th style={thStyle}>Action</th>
             </tr>
           </thead>
           <tbody>
@@ -210,14 +198,6 @@ function Admin() {
                   <div style={{ background: '#ecf0f1', borderRadius: '10px', height: '8px', width: '100px' }}>
                     <div style={{ background: '#3498db', borderRadius: '10px', height: '100%', width: `${stat.percent}%` }}></div>
                   </div>
-                </td>
-                <td style={tdStyle}>
-                   <button 
-                     onClick={() => handleDelete(events.find(e => e.title === stat.title)?._id)}
-                     style={{ color: '#e74c3c', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 'bold' }}
-                   >
-                     Delete
-                   </button>
                 </td>
               </tr>
             ))}
