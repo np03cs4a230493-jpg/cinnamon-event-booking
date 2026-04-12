@@ -56,7 +56,12 @@ function EventDetails() {
   const ticketsLeft = event.totalTickets - (event.soldTickets || 0);
   const totalPrice = event.price * (quantity || 1);
 
+  // --- NEW: Grab the logged-in user to check their role ---
+  const storedUser = localStorage.getItem('user');
+  const user = storedUser ? JSON.parse(storedUser) : null;
+
   return (
+// ... rest of the code
     <div style={{ padding: '40px', maxWidth: '800px', margin: '0 auto', fontFamily: '-apple-system, sans-serif' }}>
       <img 
         src={event.image} 
@@ -99,13 +104,19 @@ function EventDetails() {
           </div>
 
           {/* --- NEW: STRIPE CHECKOUT BUTTON --- */}
-          {/* --- SMART BUTTON LOGIC --- */}
-          {!localStorage.getItem('user') ? (
+        {/* --- SMART BUTTON LOGIC --- */}
+          {!user ? (
             <div style={{ flex: 1, marginTop: '22px' }}>
               <button 
                 onClick={() => navigate('/login')}
                 style={{ width: '100%', padding: '15px', fontSize: '18px', backgroundColor: '#2c3e50', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>
                 🔒 Login to Book Tickets
+              </button>
+            </div>
+          ) : user.role === 'admin' ? (
+            <div style={{ flex: 1, marginTop: '22px' }}>
+              <button disabled style={{ width: '100%', padding: '15px', fontSize: '18px', backgroundColor: '#95a5a6', color: 'white', border: 'none', borderRadius: '6px', cursor: 'not-allowed', fontWeight: 'bold' }}>
+                🚫 Admins Cannot Book
               </button>
             </div>
           ) : ticketsLeft === 0 ? (
