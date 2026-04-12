@@ -193,6 +193,7 @@ function Admin() {
             <tr style={{ backgroundColor: '#ecf0f1', textAlign: 'left' }}>
               <th style={thStyle}>Event</th>
               <th style={thStyle}>Sold</th>
+              <th style={thStyle}>Revenue</th> {/* <--- NEW: Added Header */}
               <th style={thStyle}>Remaining</th>
               <th style={thStyle}>Occupancy</th>
               <th style={thStyle}>Action</th>
@@ -203,6 +204,7 @@ function Admin() {
               <tr key={index} style={{ borderBottom: '1px solid #eee' }}>
                 <td style={tdStyle}><strong>{stat.title}</strong></td>
                 <td style={tdStyle}>{stat.sold}</td>
+                <td style={{...tdStyle, color: '#27ae60', fontWeight: 'bold'}}>NPR {stat.revenue}</td>
                 <td style={tdStyle}><span style={{ color: stat.left < 10 ? '#e74c3c' : '#27ae60', fontWeight: 'bold' }}>{stat.left}</span></td>
                 <td style={tdStyle}>
                   <div style={{ background: '#ecf0f1', borderRadius: '10px', height: '8px', width: '100px' }}>
