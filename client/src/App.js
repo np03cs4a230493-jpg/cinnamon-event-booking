@@ -83,13 +83,17 @@ return (
            <Link to="/suggest" style={{ color: 'white', textDecoration: 'none', fontWeight: '500' }}>Suggest Idea</Link>
         )}
         
-        {user ? (
+      {user ? (
           <>
+            {/* Show Admin Panel ONLY to admins */}
             {user.role === 'admin' && (
               <Link to="/admin" style={{ color: '#e74c3c', textDecoration: 'none', fontWeight: 'bold' }}>Admin Panel</Link>
             )}
             
-            <Link to="/my-bookings" style={{ color: 'white', textDecoration: 'none', fontWeight: '500' }}>My Tickets</Link>
+            {/* Show My Tickets ONLY to regular users */}
+            {user.role !== 'admin' && (
+              <Link to="/my-bookings" style={{ color: 'white', textDecoration: 'none', fontWeight: '500' }}>My Tickets</Link>
+            )}
 
             {/* --- DROPDOWN MENU --- */}
             <div style={{ position: 'relative', marginLeft: '10px' }} ref={dropdownRef}>
