@@ -96,8 +96,18 @@ function EventDetails() {
               value={quantity}
               disabled={ticketsLeft === 0}
               onChange={(e) => {
-                const val = parseInt(e.target.value, 10);
-                setQuantity(isNaN(val) ? '' : val);
+                let val = parseInt(e.target.value, 10);
+                
+                // --- SMART CAPPING LOGIC ---
+                if (isNaN(val)) {
+                  setQuantity('');
+                } else if (val > ticketsLeft) {
+                  setQuantity(ticketsLeft); // Force it down to the max available!
+                } else if (val < 1) {
+                  setQuantity(1); // Prevent 0 or negative numbers!
+                } else {
+                  setQuantity(val);
+                }
               }}
               style={{ width: '90px', padding: '12px', borderRadius: '6px', border: '1px solid #ccc', fontSize: '16px', textAlign: 'center' }}
             />
