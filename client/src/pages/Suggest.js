@@ -13,7 +13,8 @@ function Suggest() {
     try {
       await axios.post('http://localhost:5001/api/suggestions', {
         ...formData,
-        username: user ? user.username : 'Anonymous'
+        username: user ? user.username : 'Anonymous',
+        email: user ? user.email : null // <--- NEW: Grab their email so we can notify them!
       });
       alert("Thanks for your idea! We'll look into it.");
       navigate('/');

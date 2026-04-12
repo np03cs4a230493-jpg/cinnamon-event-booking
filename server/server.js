@@ -234,8 +234,12 @@ app.get('/api/admin/analytics', async (req, res) => {
 });
 
 const SuggestionSchema = new mongoose.Schema({
-  username: String, title: { type: String, required: true }, description: { type: String, required: true },
-  status: { type: String, default: 'pending' }, createdAt: { type: Date, default: Date.now }
+  username: String, 
+  email: String, // <--- NEW: Add email to the schema
+  title: { type: String, required: true }, 
+  description: { type: String, required: true },
+  status: { type: String, default: 'pending' }, 
+  createdAt: { type: Date, default: Date.now }
 });
 const Suggestion = mongoose.models.Suggestion || mongoose.model('Suggestion', SuggestionSchema);
 
@@ -253,9 +257,38 @@ app.get('/api/admin/suggestions', async (req, res) => {
 
 app.patch('/api/suggestions/:id', async (req, res) => {
   try {
-    await Suggestion.findByIdAndUpdate(req.params.id, { status: req.body.status || 'accepted' });
+    // 1. Update the suggestion in the database and grab the updated data ({ new: true })
+    const updatedSuggestion = await Suggestion.findByIdAndUpdate(
+      req.params.id, 
+      { status: req.body.status || 'accepted' }, 
+      { new: true } 
+    );
+    
+    // 2. --- NEW: SEND CONGRATS EMAIL ---
+    // Only send the email if they provided one (aren't anonymous) AND the status is actually 'accepted'
+    if (updatedSuggestion.email && req.body.status === 'accepted') {
+      const mailOptions = {
+        from: 'cinnamoncotickets@gmail.com', // <--- Make sure this matches your transporter email at the top of server.js!
+        to: updatedSuggestion.email,
+        subject: `🎉 Your Event Idea was Accepted!`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
+            <h2 style="color: #d35400;">Great news, ${updatedSuggestion.username}!</h2>
+            <p style="font-size: 16px; color: #555;">We absolutely loved your idea for <strong>"${updatedSuggestion.title}"</strong> and we are making it happen!</p>
+            <p style="font-size: 16px; color: #555;">Keep an eye on the Cinnamon & Co. homepage for official dates and tickets.</p>
+            <p style="margin-top: 30px; font-size: 14px; color: #777;">Thanks for being an awesome part of our community!<br/>- The Cinnamon & Co. Team</p>
+          </div>
+        `
+      };
+
+      // Send it in the background!
+      transporter.sendMail(mailOptions).catch(err => console.log("❌ Suggestion Email Error:", err));
+    }
+
     res.json({ message: "Suggestion status updated" });
-  } catch (err) { res.status(500).json({ message: "Error updating suggestion" }); }
+  } catch (err) { 
+    res.status(500).json({ message: "Error updating suggestion" }); 
+  }
 });
 
 app.delete('/api/suggestions/:id', async (req, res) => {
