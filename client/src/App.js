@@ -79,10 +79,10 @@ return (
       
       <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
         <Link to="/" style={{ color: 'white', textDecoration: 'none', fontWeight: '500' }}>Home</Link>
-        {(!user || user.role !== 'admin') && (
+      {/* Show Suggest Idea ONLY to logged-in regular users */}
+        {(user && user.role !== 'admin') && (
            <Link to="/suggest" style={{ color: 'white', textDecoration: 'none', fontWeight: '500' }}>Suggest Idea</Link>
         )}
-        
       {user ? (
           <>
             {/* Show Admin Panel ONLY to admins */}
