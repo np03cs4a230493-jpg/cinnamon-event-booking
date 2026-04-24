@@ -83,17 +83,40 @@ app.delete('/api/events/:id', async (req, res) => {
 
 app.post('/api/register', async (req, res) => {
   try {
-    const { username, email, password, adminKey } = req.body;
+    const { username, email, password } = req.body;
+
+    // --- 1. BACKEND VALIDATION CHECKS ---
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*#?&]{8,}$/;
+
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ message: "Invalid email format." });
+    }
+    if (!passwordRegex.test(password)) {
+      return res.status(400).json({ message: "Password must be at least 8 characters and contain a number and a letter." });
+    }
+
+    // --- 2. CHECK IF USER ALREADY EXISTS ---
     const existingUser = await User.findOne({ email });
-    if (existingUser) return res.status(400).json({ message: "User already exists" });
+    if (existingUser) {
+      return res.status(400).json({ message: "Email is already registered." });
+    }
 
+    // --- 3. HASH AND SAVE ---
     const hashedPassword = await bcrypt.hash(password, 10);
-    const role = (adminKey === 'lemonade') ? 'admin' : 'user';
+    const newUser = new User({ 
+      username, 
+      email, 
+      password: hashedPassword,
+      role: 'user' // Default role
+    });
 
-    const newUser = new User({ username, email, password: hashedPassword, role });
     await newUser.save();
-    res.status(201).json({ message: "User registered successfully" });
-  } catch (err) { res.status(500).json({ message: "Error registering user" }); }
+    res.status(201).json({ message: "User created successfully" });
+
+  } catch (err) { 
+    res.status(500).json({ message: "Server error during registration" }); 
+  }
 });
 
 app.post('/api/login', async (req, res) => {
