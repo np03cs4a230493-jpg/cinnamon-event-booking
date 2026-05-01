@@ -14,27 +14,29 @@ function Signup() {
 
 const handleSubmit = async (e) => {
     e.preventDefault();
-    const { username, email, password } = formData;
+    // 1. Extract adminKey from the state!
+    const { username, email, password, adminKey } = formData;
 
-    // --- 1. EMAIL VALIDATION REGEX ---
-    // Checks for: text + @ + text + . + text
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       alert("❌ Please enter a valid email address.");
-      return; // Stops the function right here!
+      return; 
     }
 
-    // --- 2. PASSWORD VALIDATION REGEX ---
-    // Checks for: Minimum 8 characters, at least one letter, and at least one number
     const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*#?&]{8,}$/;
     if (!passwordRegex.test(password)) {
       alert("❌ Password must be at least 8 characters long and include at least one letter and one number.");
-      return; // Stops the function right here!
+      return; 
     }
 
-    // --- 3. PROCEED WITH REGISTRATION ---
     try {
-      await axios.post('http://localhost:5001/api/register', { username, email, password });
+      // 2. SEND THE SECRET CODE TO THE BACKEND!
+      await axios.post('http://localhost:5001/api/register', { 
+        username, 
+        email, 
+        password, 
+        adminCode: adminKey // <--- Maps the frontend key to the backend expected name
+      });
       alert("✅ Account created successfully!");
       navigate('/login');
     } catch (err) {

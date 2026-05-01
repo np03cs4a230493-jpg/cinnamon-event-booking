@@ -83,9 +83,10 @@ app.delete('/api/events/:id', async (req, res) => {
 
 app.post('/api/register', async (req, res) => {
   try {
-    const { username, email, password } = req.body;
+    // 1. Grab the adminCode along with the normal data
+    const { username, email, password, adminCode } = req.body; 
 
-    // --- 1. BACKEND VALIDATION CHECKS ---
+    // Validation checks...
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*#?&]{8,}$/;
 
@@ -96,19 +97,21 @@ app.post('/api/register', async (req, res) => {
       return res.status(400).json({ message: "Password must be at least 8 characters and contain a number and a letter." });
     }
 
-    // --- 2. CHECK IF USER ALREADY EXISTS ---
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(400).json({ message: "Email is already registered." });
     }
 
-    // --- 3. HASH AND SAVE ---
+    // --- 2. SMART ROLE ASSIGNMENT ---
+    // If they typed the secret code, make them an admin. Otherwise, normal user.
+    const assignedRole = adminCode === 'Lemonade' ? 'admin' : 'user';
+
     const hashedPassword = await bcrypt.hash(password, 10);
     const newUser = new User({ 
       username, 
       email, 
       password: hashedPassword,
-      role: 'user' // Default role
+      role: assignedRole // <-- Use the smart role here!
     });
 
     await newUser.save();
