@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import StripeCheckout from 'react-stripe-checkout'; // <--- NEW IMPORT
+import StripeCheckout from 'react-stripe-checkout'; 
 import toast from 'react-hot-toast'; 
 
 function EventDetails() {
@@ -23,12 +23,11 @@ function EventDetails() {
     fetchEvent();
   }, [id]);
 
-  // --- UPDATED: Now receives a "token" from Stripe when the popup succeeds ---
-const handleBooking = async (stripeToken) => {
+  const handleBooking = async (stripeToken) => {
     const storedUser = localStorage.getItem('user');
     
     if (!storedUser) {
-      toast.error("Please Login to book a ticket!"); // <--- TOAST
+      toast.error("Please Login to book a ticket!"); 
       navigate('/login');
       return;
     }
@@ -43,52 +42,49 @@ const handleBooking = async (stripeToken) => {
         quantity: finalQuantity 
       });
 
-      // Use toast for the success and receipt!
-      toast.success(`Payment Successful! Receipt: ${stripeToken.id}`); // <--- TOAST
+      toast.success(`Payment Successful! Receipt: ${stripeToken.id}`); 
       navigate('/my-bookings'); 
     } catch (err) {
-      toast.error(err.response?.data?.message || "Booking Failed. Please try again."); // <--- TOAST
+      toast.error(err.response?.data?.message || "Booking Failed. Please try again."); 
     }
   };
 
-  if (!event) return <div style={{ padding: '20px' }}>Loading details...</div>;
+  if (!event) return <div style={{ padding: '20px', textAlign: 'center' }}>Loading details...</div>;
 
   const ticketsLeft = event.totalTickets - (event.soldTickets || 0);
   const totalPrice = event.price * (quantity || 1);
-
-  // --- NEW: Grab the logged-in user to check their role ---
   const storedUser = localStorage.getItem('user');
   const user = storedUser ? JSON.parse(storedUser) : null;
 
   return (
-// ... rest of the code
-    <div style={{ padding: '40px', maxWidth: '800px', margin: '0 auto', fontFamily: '-apple-system, sans-serif' }}>
+    <div style={{ padding: '40px 20px', maxWidth: '850px', margin: '0 auto', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
       <img 
         src={event.image} 
         alt={event.title} 
-        style={{ width: '100%', height: '400px', objectFit: 'cover', borderRadius: '12px', boxShadow: '0 4px 15px rgba(0,0,0,0.1)' }} 
+        style={{ width: '100%', height: '450px', objectFit: 'cover', borderRadius: '16px', boxShadow: '0 10px 30px rgba(0,0,0,0.1)' }} 
       />
-      <h1 style={{ color: '#d35400', fontSize: '2.5rem', margin: '20px 0 10px 0' }}>{event.title}</h1>
+      <h1 style={{ color: '#2c3e50', fontSize: '2.8rem', margin: '30px 0 10px 0', fontWeight: '800', letterSpacing: '-0.5px' }}>{event.title}</h1>
       
-      <div style={{ display: 'flex', justifyContent: 'space-between', color: '#555', marginBottom: '20px', borderBottom: '1px solid #eee', paddingBottom: '20px' }}>
-        <span style={{ fontSize: '1.1rem' }}>📅 {new Date(event.date).toLocaleDateString()}</span>
-        <span style={{ fontWeight: 'bold', fontSize: '1.3rem', color: '#27ae60' }}>
-           {event.price === 0 ? "FREE" : `NPR ${event.price}`}
+      <div style={{ display: 'flex', justifyContent: 'space-between', color: '#7f8c8d', marginBottom: '25px', borderBottom: '2px solid #ecf0f1', paddingBottom: '25px', fontWeight: '500' }}>
+        <span style={{ fontSize: '1.2rem' }}>📅 {new Date(event.date).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
+        <span style={{ fontWeight: '800', fontSize: '1.4rem', color: '#27ae60' }}>
+           {event.price === 0 ? "FREE EVENT" : `NPR ${event.price}`}
         </span>
       </div>
 
-      <p style={{ lineHeight: '1.8', fontSize: '1.1rem', color: '#444' }}>{event.description}</p>
+      <p style={{ lineHeight: '1.8', fontSize: '1.15rem', color: '#555', marginBottom: '40px' }}>{event.description}</p>
       
-      <div style={{ marginTop: '40px', padding: '25px', backgroundColor: '#fff', borderRadius: '12px', border: '1px solid #eaeaea', boxShadow: '0 4px 10px rgba(0,0,0,0.03)' }}>
-        <h3 style={{ borderBottom: '2px solid #f1f2f6', paddingBottom: '10px', marginTop: 0, color: '#2c3e50' }}>Ticket Information</h3>
+      {/* Premium Booking Card */}
+      <div style={{ padding: '35px', backgroundColor: '#fff', borderRadius: '16px', boxShadow: '0 10px 30px rgba(0,0,0,0.08)' }}>
+        <h3 style={{ borderBottom: '1px solid #ecf0f1', paddingBottom: '15px', marginTop: 0, color: '#2c3e50', fontSize: '1.4rem', fontWeight: '700' }}>Secure Your Spot</h3>
         
-        <p style={{ fontWeight: 'bold', color: ticketsLeft < 10 ? '#e74c3c' : '#27ae60', fontSize: '1.1rem' }}>
-          {ticketsLeft === 0 ? "Completely Sold Out!" : `Tickets Available: ${ticketsLeft} / ${event.totalTickets}`}
+        <p style={{ fontWeight: '700', color: ticketsLeft < 10 ? '#e74c3c' : '#27ae60', fontSize: '1.1rem', marginTop: '20px' }}>
+          {ticketsLeft === 0 ? "Completely Sold Out!" : `${ticketsLeft} Tickets Remaining`}
         </p>
         
-        <div style={{ display: 'flex', gap: '20px', marginTop: '25px', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: '25px', marginTop: '25px', alignItems: 'flex-end' }}>
           <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <label style={{ fontSize: '13px', color: '#7f8c8d', fontWeight: 'bold', marginBottom: '5px', textTransform: 'uppercase' }}>Quantity</label>
+            <label style={{ fontSize: '13px', color: '#7f8c8d', fontWeight: '700', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Quantity</label>
             <input 
               type="number" 
               min="1" 
@@ -97,44 +93,35 @@ const handleBooking = async (stripeToken) => {
               disabled={ticketsLeft === 0}
               onChange={(e) => {
                 let val = parseInt(e.target.value, 10);
-                
-                // --- SMART CAPPING LOGIC ---
-                if (isNaN(val)) {
-                  setQuantity('');
-                } else if (val > ticketsLeft) {
-                  setQuantity(ticketsLeft); // Force it down to the max available!
-                } else if (val < 1) {
-                  setQuantity(1); // Prevent 0 or negative numbers!
-                } else {
-                  setQuantity(val);
-                }
+                if (isNaN(val)) setQuantity('');
+                else if (val > ticketsLeft) setQuantity(ticketsLeft); 
+                else if (val < 1) setQuantity(1); 
+                else setQuantity(val);
               }}
-              style={{ width: '90px', padding: '12px', borderRadius: '6px', border: '1px solid #ccc', fontSize: '16px', textAlign: 'center' }}
+              style={{ width: '100px', padding: '14px', borderRadius: '8px', border: '1px solid #e0e6ed', fontSize: '16px', textAlign: 'center', backgroundColor: '#f8f9fa', outline: 'none' }}
             />
           </div>
 
-          {/* --- NEW: STRIPE CHECKOUT BUTTON --- */}
-        {/* --- SMART BUTTON LOGIC --- */}
           {!user ? (
-            <div style={{ flex: 1, marginTop: '22px' }}>
+            <div style={{ flex: 1 }}>
               <button 
                 onClick={() => navigate('/login')}
-                style={{ width: '100%', padding: '15px', fontSize: '18px', backgroundColor: '#2c3e50', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>
-                🔒 Login to Book Tickets
+                style={{ width: '100%', padding: '16px', fontSize: '16px', backgroundColor: '#2c3e50', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', boxShadow: '0 4px 6px rgba(44, 62, 80, 0.2)' }}>
+                🔒 Login to Book
               </button>
             </div>
           ) : user.role === 'admin' ? (
-            <div style={{ flex: 1, marginTop: '22px' }}>
-              <button disabled style={{ width: '100%', padding: '15px', fontSize: '18px', backgroundColor: '#95a5a6', color: 'white', border: 'none', borderRadius: '6px', cursor: 'not-allowed', fontWeight: 'bold' }}>
+            <div style={{ flex: 1 }}>
+              <button disabled style={{ width: '100%', padding: '16px', fontSize: '16px', backgroundColor: '#ecf0f1', color: '#95a5a6', border: 'none', borderRadius: '8px', cursor: 'not-allowed', fontWeight: 'bold' }}>
                 🚫 Admins Cannot Book
               </button>
             </div>
           ) : ticketsLeft === 0 ? (
-            <button disabled style={{ flex: 1, padding: '15px', fontSize: '18px', marginTop: '22px', backgroundColor: '#bdc3c7', color: 'white', border: 'none', borderRadius: '6px', cursor: 'not-allowed', fontWeight: 'bold' }}>
+            <button disabled style={{ flex: 1, padding: '16px', fontSize: '16px', backgroundColor: '#ecf0f1', color: '#95a5a6', border: 'none', borderRadius: '8px', cursor: 'not-allowed', fontWeight: 'bold' }}>
               Sold Out
             </button>
           ) : (
-            <div style={{ flex: 1, marginTop: '22px' }}>
+            <div style={{ flex: 1 }}>
               <StripeCheckout
                 stripeKey="pk_test_51TGBAZHSmiO8YkaXeL7kxw15MiwDLwiJHyVKTuBY5ReG24wsdvfXSsMlDrVhAD8rMsC5nTGrlLxrEukaMXdI3hde00h0HqZtzq"
                 token={handleBooking} 
@@ -144,10 +131,10 @@ const handleBooking = async (stripeToken) => {
                 currency="NPR"
                 image="https://cdn-icons-png.flaticon.com/512/924/924514.png" 
               >
-                <button style={{ width: '100%', padding: '15px', fontSize: '18px', backgroundColor: '#6772e5', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', boxShadow: '0 4px 6px rgba(103, 114, 229, 0.2)', transition: 'transform 0.2s' }}
+                <button style={{ width: '100%', padding: '16px', fontSize: '16px', backgroundColor: '#6772e5', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', boxShadow: '0 4px 15px rgba(103, 114, 229, 0.3)', transition: 'transform 0.2s ease' }}
                         onMouseOver={(e) => e.target.style.transform = 'translateY(-2px)'}
                         onMouseOut={(e) => e.target.style.transform = 'translateY(0)'}>
-                  💳 Pay NPR {totalPrice} securely
+                  💳 Pay NPR {totalPrice} Securely
                 </button>
               </StripeCheckout>
             </div>
