@@ -5,22 +5,20 @@ import axios from 'axios';
 function Home() {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [filterDate, setFilterDate] = useState(''); 
 
   useEffect(() => {
     const fetchEvents = async () => {
       try {
         const response = await axios.get('http://localhost:5001/api/events');
         
-        // --- NEW: SMART FRONTEND SORTING ---
         const smartSortedEvents = response.data.sort((a, b) => {
           const aSoldOut = (a.totalTickets - (a.soldTickets || 0)) <= 0;
           const bSoldOut = (b.totalTickets - (b.soldTickets || 0)) <= 0;
 
-          // 1. Push Sold Out events to the very bottom
           if (aSoldOut && !bSoldOut) return 1;
           if (!aSoldOut && bSoldOut) return -1;
 
-          // 2. Otherwise, sort by most tickets sold
           return (b.soldTickets || 0) - (a.soldTickets || 0);
         });
 
@@ -34,22 +32,65 @@ function Home() {
     fetchEvents();
   }, []);
 
+  // --- NEW: Extract only the exact dates that have events! ---
+  const uniqueDates = [...new Set(events.map(event => {
+    const eventDate = new Date(event.date);
+    const yyyy = eventDate.getFullYear();
+    const mm = String(eventDate.getMonth() + 1).padStart(2, '0');
+    const dd = String(eventDate.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+  }))].sort(); // .sort() puts them in chronological order
+
+  const displayedEvents = events.filter(event => {
+    if (!filterDate) return true; 
+    
+    const eventDate = new Date(event.date);
+    const yyyy = eventDate.getFullYear();
+    const mm = String(eventDate.getMonth() + 1).padStart(2, '0');
+    const dd = String(eventDate.getDate()).padStart(2, '0');
+    const formattedEventDate = `${yyyy}-${mm}-${dd}`;
+    
+    return formattedEventDate === filterDate;
+  });
+
   if (loading) return <div style={{ textAlign: 'center', padding: '50px', fontSize: '1.2rem', color: '#555' }}>Loading events...</div>;
 
   return (
     <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '40px 20px', fontFamily: '-apple-system, sans-serif' }}>
       
-      <div style={{ textAlign: 'center', marginBottom: '50px' }}>
+      <div style={{ textAlign: 'center', marginBottom: '40px' }}>
         <h1 style={{ color: '#d35400', fontSize: '3rem', margin: '0 0 10px 0' }}>Welcome to Cinnamon & Co.</h1>
         <p style={{ fontSize: '1.2rem', color: '#7f8c8d' }}>Discover and book the best coffeehouse events in town!</p>
       </div>
 
-      {events.length === 0 ? (
-        <p style={{ textAlign: 'center', color: '#777', fontSize: '1.1rem' }}>No events currently available. Check back soon!</p>
+      {/* --- NEW: SMART DROPDOWN MENU --- */}
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '15px', marginBottom: '40px', backgroundColor: '#fff', padding: '20px', borderRadius: '10px', boxShadow: '0 2px 10px rgba(0,0,0,0.05)' }}>
+        <label style={{ fontWeight: 'bold', color: '#2c3e50', fontSize: '1.1rem' }}>📅 Filter by Event Date:</label>
+        
+        <select 
+          value={filterDate}
+          onChange={(e) => setFilterDate(e.target.value)}
+          style={{ padding: '10px 15px', borderRadius: '6px', border: '1px solid #ccc', fontSize: '1rem', cursor: 'pointer', backgroundColor: '#fff', minWidth: '250px' }}
+        >
+          <option value="">🌟 All Upcoming Events</option>
+          {uniqueDates.map(date => {
+            // Make the date look pretty in the dropdown (e.g., "Fri, Dec 20, 2025")
+            const displayString = new Date(date).toLocaleDateString(undefined, { 
+              weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' 
+            });
+            return <option key={date} value={date}>{displayString}</option>
+          })}
+        </select>
+        
+      </div>
+
+      {displayedEvents.length === 0 ? (
+        <p style={{ textAlign: 'center', color: '#777', fontSize: '1.2rem', marginTop: '40px' }}>
+          No events currently available.
+        </p>
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '30px' }}>
-          {events.map(event => {
-            // Calculate remaining tickets
+          {displayedEvents.map(event => { 
             const ticketsLeft = event.totalTickets - (event.soldTickets || 0);
 
             return (
@@ -73,7 +114,6 @@ function Home() {
                     {event.description?.length > 100 ? `${event.description.substring(0, 100)}...` : event.description}
                   </p>
                   
-                  {/* --- NEW FIX: Link to details page instead of direct booking --- */}
                   <Link 
                     to={`/event/${event._id}`} 
                     style={{ 
@@ -86,13 +126,12 @@ function Home() {
                       textDecoration: 'none', 
                       borderRadius: '6px', 
                       fontWeight: 'bold',
-                      pointerEvents: ticketsLeft === 0 ? 'none' : 'auto', // Disables clicking if sold out
+                      pointerEvents: ticketsLeft === 0 ? 'none' : 'auto',
                       boxSizing: 'border-box'
                     }}
                   >
                     {ticketsLeft === 0 ? "Sold Out" : "View Details & Tickets 🎟️"}
                   </Link>
-
                 </div>
               </div>
             )
