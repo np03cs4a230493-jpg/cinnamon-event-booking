@@ -1,8 +1,7 @@
 import './App.css';
-import { Toaster } from 'react-hot-toast';
-
 import React, { useState, useEffect, useRef } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useNavigate } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast'; 
 
 // Import Pages
 import Home from './pages/Home';
@@ -19,22 +18,27 @@ import ForgotPassword from './pages/ForgotPassword';
 function App() {
   return (
     <Router>
-      {/* --- NEW: The Toaster goes here! --- */}
-      <Toaster position="top-center" reverseOrder={false} />
-      
-      <Navbar />
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/signup" element={<Signup />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/event/:id" element={<EventDetails />} />
-        <Route path="/my-bookings" element={<MyBookings />} />
-        <Route path="/admin" element={<Admin />} /> 
-        <Route path="/suggest" element={<Suggest />} />
-        <Route path="/profile" element={<Profile />} /> 
-        <Route path="/forgot-password" element={<ForgotPassword />} />
-      </Routes>
-      <Footer />
+      <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+        <Toaster position="top-center" reverseOrder={false} />
+        
+        <Navbar />
+        
+        <main style={{ flex: 1 }}>
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/signup" element={<Signup />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/event/:id" element={<EventDetails />} />
+            <Route path="/my-bookings" element={<MyBookings />} />
+            <Route path="/admin" element={<Admin />} /> 
+            <Route path="/suggest" element={<Suggest />} />
+            <Route path="/profile" element={<Profile />} /> 
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+          </Routes>
+        </main>
+
+        <Footer />
+      </div>
     </Router>
   );
 }
@@ -74,35 +78,33 @@ function Navbar() {
     navigate('/login');
   };
 
-return (
+  return (
     <nav style={{ 
       display: 'flex', justifyContent: 'space-between', alignItems: 'center', 
       padding: '15px 40px', backgroundColor: '#2c3e50', color: 'white', 
       boxShadow: '0 2px 10px rgba(0,0,0,0.1)', marginBottom: '30px' 
     }}>
-      <Link to="/" style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'white', textDecoration: 'none' }}>
+      <Link to="/" style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'white', textDecoration: 'none', letterSpacing: '-0.5px' }}>
         ☕ Cinnamon & Co.
       </Link>
       
       <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
         <Link to="/" style={{ color: 'white', textDecoration: 'none', fontWeight: '500' }}>Home</Link>
-      {/* Show Suggest Idea ONLY to logged-in regular users */}
+        
         {(user && user.role !== 'admin') && (
            <Link to="/suggest" style={{ color: 'white', textDecoration: 'none', fontWeight: '500' }}>Suggest Idea</Link>
         )}
-      {user ? (
+
+        {user ? (
           <>
-            {/* Show Admin Panel ONLY to admins */}
             {user.role === 'admin' && (
               <Link to="/admin" style={{ color: '#e74c3c', textDecoration: 'none', fontWeight: 'bold' }}>Admin Panel</Link>
             )}
             
-            {/* Show My Tickets ONLY to regular users */}
             {user.role !== 'admin' && (
               <Link to="/my-bookings" style={{ color: 'white', textDecoration: 'none', fontWeight: '500' }}>My Tickets</Link>
             )}
 
-            {/* --- DROPDOWN MENU --- */}
             <div style={{ position: 'relative', marginLeft: '10px' }} ref={dropdownRef}>
               <button 
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
@@ -111,33 +113,41 @@ return (
                   color: '#f1c40f', fontWeight: 'bold', cursor: 'pointer', 
                   display: 'flex', alignItems: 'center', gap: '8px',
                   border: '1px solid rgba(255,255,255,0.2)', padding: '8px 16px', borderRadius: '20px',
-                  transition: 'all 0.2s'
+                  transition: 'all 0.2s ease', fontFamily: 'inherit', fontSize: '14px'
                 }}
               >
-                Hi, {user.username} <span style={{ fontSize: '0.8rem' }}>{isDropdownOpen ? '▲' : '▼'}</span>
+                Hi, {user.username} <span style={{ fontSize: '10px' }}>{isDropdownOpen ? '▲' : '▼'}</span>
               </button>
 
               {isDropdownOpen && (
                 <div style={{
-                  position: 'absolute', top: '120%', right: 0, 
-                  backgroundColor: 'white', borderRadius: '8px', 
-                  boxShadow: '0 10px 25px rgba(0,0,0,0.2)', 
-                  minWidth: '180px', zIndex: 1000, overflow: 'hidden',
+                  position: 'absolute', top: '130%', right: 0, 
+                  backgroundColor: '#ffffff', borderRadius: '12px', 
+                  boxShadow: '0 10px 30px rgba(0,0,0,0.15)', 
+                  minWidth: '200px', zIndex: 1000, overflow: 'hidden',
                   display: 'flex', flexDirection: 'column',
-                  border: '1px solid #eee'
+                  border: '1px solid #f1f2f6',
+                  padding: '8px 0'
                 }}>
                   <Link 
                     to="/profile" 
                     onClick={() => setIsDropdownOpen(false)}
-                    style={{ padding: '12px 20px', color: '#2c3e50', textDecoration: 'none', borderBottom: '1px solid #eee', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '10px' }}
+                    onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#f8f9fa'}
+                    onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                    style={{ ...dropdownItemStyle, color: '#2c3e50' }}
                   >
-                    👤 My Profile
+                    My Profile
                   </Link>
+                  
+                  <div style={{ height: '1px', backgroundColor: '#f1f2f6', margin: '4px 0' }}></div>
+                  
                   <button 
                     onClick={handleLogout} 
-                    style={{ padding: '12px 20px', color: '#e74c3c', textDecoration: 'none', background: 'transparent', border: 'none', textAlign: 'left', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '10px', width: '100%', fontSize: '1rem' }}
+                    onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#fcf3f2'}
+                    onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                    style={{ ...dropdownItemStyle, color: '#e74c3c' }}
                   >
-                    🚪 Logout
+                    Logout
                   </button>
                 </div>
               )}
@@ -155,5 +165,24 @@ return (
     </nav>
   );
 }
+
+// --- NEW: Universal style forces both the Link and Button to be perfectly identical ---
+const dropdownItemStyle = {
+  padding: '12px 20px', 
+  textDecoration: 'none', 
+  background: 'transparent', 
+  border: 'none', 
+  textAlign: 'left', 
+  cursor: 'pointer', 
+  fontWeight: '600', 
+  display: 'block', 
+  boxSizing: 'border-box',
+  width: '100%', 
+  margin: 0,
+  fontFamily: 'inherit',  /* Forces button to stop using the OS default font */
+  fontSize: '15px', 
+  lineHeight: '1.5',      /* Forces equal height calculation */
+  transition: 'background 0.2s ease'
+};
 
 export default App;
