@@ -260,6 +260,7 @@ app.get('/api/admin/analytics', async (req, res) => {
       const revenue = sold * event.price;
       const left = event.totalTickets - sold;
       return {
+        _id: event._id, // <--- NEW: Send the ID to the frontend!
         title: event.title, total: event.totalTickets, sold, left, revenue,
         percent: event.totalTickets > 0 ? (sold / event.totalTickets) * 100 : 0
       };
@@ -353,3 +354,22 @@ app.delete('/api/suggestions/:id', async (req, res) => {
 });
 
 app.listen(PORT, () => console.log(`🚀 Server is running on http://localhost:${PORT}`));
+
+// --- NEW: EDIT EVENT ROUTE ---
+app.put('/api/events/:id', upload.single('image'), async (req, res) => {
+  try {
+    const updateData = { ...req.body };
+    
+    // If the admin uploaded a NEW image, update the path. 
+    // If they left it blank, it just keeps the old image!
+    if (req.file) {
+      updateData.image = `http://localhost:5001/uploads/${req.file.filename}`;
+    }
+
+    // Find the event by ID and replace its info with the new stuff
+    const updatedEvent = await Event.findByIdAndUpdate(req.params.id, updateData, { new: true });
+    res.json(updatedEvent);
+  } catch (err) { 
+    res.status(500).json({ message: "Error updating event" }); 
+  }
+});
