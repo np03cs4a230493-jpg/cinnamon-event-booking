@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { GoogleLogin } from '@react-oauth/google'; // <--- NEW IMPORT
 
 function Login() {
-  const [formData, setFormData] = useState({ email: '', password: '' });
+  const [formData, setFormData] = useState({ username: '', email: '', password: '' });
   const navigate = useNavigate();
 
   // --- NORMAL LOGIN ---
@@ -46,7 +46,17 @@ function Login() {
         
         <form onSubmit={handleSubmit}>
           <h2 style={{ textAlign: 'center', color: '#d35400', marginTop: 0 }}>Login</h2>
-          
+
+          {/* --- NEW: NAME FIELD --- */}
+          <div style={{ marginBottom: '15px' }}>
+            <label style={{ fontSize: '14px', color: '#555', fontWeight: 'bold' }}>Username</label>
+            <input 
+              type="text" 
+              style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '5px', border: '1px solid #ccc' }}
+              onChange={(e) => setFormData({...formData, username: e.target.value})}
+              required 
+            />
+          </div>          
           <div style={{ marginBottom: '15px' }}>
             <label style={{ fontSize: '14px', color: '#555', fontWeight: 'bold' }}>Email</label>
             <input 
