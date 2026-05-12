@@ -404,3 +404,67 @@ app.put('/api/users/:id', async (req, res) => {
     res.status(500).json({ message: "Server error while updating profile." });
   }
 });
+
+// --- NEW: REQUEST PASSWORD RESET ---
+app.post('/api/forgot-password', async (req, res) => {
+  try {
+    const { email } = req.body;
+    const user = await User.findOne({ email });
+    if (!user) return res.status(404).json({ message: "No account with that email found." });
+
+    // 1. Generate a random 6-digit code
+    const resetCode = Math.floor(100000 + Math.random() * 900000).toString();
+    
+    // 2. Save it to the user's database profile (expires in 15 mins)
+    user.resetCode = resetCode;
+    user.resetCodeExpires = Date.now() + 15 * 60 * 1000; 
+    await user.save();
+
+    // 3. Send the email!
+    const mailOptions = {
+      from: 'cinnamoncotickets@gmail.com', // Must match your transporter
+      to: user.email,
+      subject: `🔒 Password Reset Code: ${resetCode}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
+          <h2 style="color: #d35400;">Password Reset Request</h2>
+          <p>We received a request to reset your Cinnamon & Co. password.</p>
+          <p>Your 6-digit reset code is: <strong style="font-size: 24px; color: #2c3e50; letter-spacing: 2px;">${resetCode}</strong></p>
+          <p style="color: #e74c3c; font-size: 12px;">This code will expire in 15 minutes. If you didn't request this, ignore this email.</p>
+        </div>
+      `
+    };
+    
+    transporter.sendMail(mailOptions).catch(err => console.log("Email error:", err));
+    res.json({ message: "Reset code sent to your email!" });
+
+  } catch (err) {
+    res.status(500).json({ message: "Error sending reset code." });
+  }
+});
+
+// --- NEW: VERIFY AND RESET PASSWORD ---
+app.post('/api/reset-password', async (req, res) => {
+  try {
+    const { email, code, newPassword } = req.body;
+    
+    // Find the user with that email, that exact code, AND ensure the code hasn't expired
+    const user = await User.findOne({ 
+      email, 
+      resetCode: code, 
+      resetCodeExpires: { $gt: Date.now() } 
+    });
+
+    if (!user) return res.status(400).json({ message: "Invalid or expired reset code." });
+
+    // Hash the new password and clear the temporary reset codes
+    user.password = await bcrypt.hash(newPassword, 10);
+    user.resetCode = undefined;
+    user.resetCodeExpires = undefined;
+    await user.save();
+
+    res.json({ message: "Password has been successfully reset!" });
+  } catch (err) {
+    res.status(500).json({ message: "Error resetting password." });
+  }
+});

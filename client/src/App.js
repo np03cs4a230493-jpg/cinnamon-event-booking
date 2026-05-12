@@ -14,6 +14,7 @@ import Admin from './pages/Admin';
 import Footer from './components/Footer';
 import Suggest from './pages/Suggest';
 import Profile from './pages/Profile'; 
+import ForgotPassword from './pages/ForgotPassword';
 
 function App() {
   return (
@@ -31,6 +32,7 @@ function App() {
         <Route path="/admin" element={<Admin />} /> 
         <Route path="/suggest" element={<Suggest />} />
         <Route path="/profile" element={<Profile />} /> 
+        <Route path="/forgot-password" element={<ForgotPassword />} />
       </Routes>
       <Footer />
     </Router>

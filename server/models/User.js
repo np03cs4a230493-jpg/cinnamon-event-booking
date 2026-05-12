@@ -4,13 +4,11 @@ const UserSchema = new mongoose.Schema({
   username: { type: String, required: true },
   email:    { type: String, required: true, unique: true },
   password: { type: String, required: true },
+  role: { type: String, default: 'user', enum: ['user', 'admin'] },
   
-  // NEW FIELD: Role
-  role: { 
-    type: String, 
-    default: 'user', // Everyone is a normal user by default
-    enum: ['user', 'admin'] // Only these two values are allowed
-  }
+  // --- NEW: FORGOT PASSWORD FIELDS ---
+  resetCode: { type: String },
+  resetCodeExpires: { type: Date }
 });
 
 module.exports = mongoose.model('User', UserSchema);
