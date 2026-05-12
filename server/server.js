@@ -124,15 +124,28 @@ app.post('/api/register', async (req, res) => {
 
 app.post('/api/login', async (req, res) => {
   try {
-    const { email, password } = req.body;
-    const user = await User.findOne({ email });
+    // 1. Grab whatever they typed (whether React called it 'email' or 'identifier')
+    const loginString = req.body.identifier || req.body.email;
+    const password = req.body.password;
+    
+    // 2. SMART SEARCH: Check if that string matches an email OR a username
+    const user = await User.findOne({ 
+      $or: [
+        { email: loginString }, 
+        { username: loginString }
+      ] 
+    });
+    
     if (!user) return res.status(400).json({ message: "User not found" });
 
+    // 3. Verify the password
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(400).json({ message: "Invalid credentials" });
 
     res.json({ message: "Login Successful!", username: user.username, email: user.email, _id: user._id, role: user.role });
-  } catch (err) { res.status(500).json({ message: "Server error" }); }
+  } catch (err) { 
+    res.status(500).json({ message: "Server error" }); 
+  }
 });
 
 app.post('/api/google-login', async (req, res) => {
