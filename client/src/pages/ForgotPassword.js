@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
 function ForgotPassword() {
-  const [step, setStep] = useState(1); // Step 1: Email, Step 2: Code & New Password
+  const [step, setStep] = useState(1); 
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -15,7 +15,7 @@ function ForgotPassword() {
     try {
       await axios.post('http://localhost:5001/api/forgot-password', { email });
       toast.success("Reset code sent to your email!");
-      setStep(2); // Move to the next step!
+      setStep(2); 
     } catch (err) {
       toast.error(err.response?.data?.message || "Error sending code");
     }
@@ -33,37 +33,51 @@ function ForgotPassword() {
   };
 
   return (
-    <div style={{ display: 'flex', justifyContent: 'center', marginTop: '50px', fontFamily: 'Arial' }}>
-      <div style={{ width: '320px', padding: '30px', border: '1px solid #eee', borderRadius: '10px', backgroundColor: 'white', boxShadow: '0 4px 15px rgba(0,0,0,0.05)' }}>
-        <h2 style={{ textAlign: 'center', color: '#d35400', marginTop: 0 }}>Reset Password</h2>
+    <div style={{ display: 'flex', justifyContent: 'center', marginTop: '80px', marginBottom: '80px', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
+      <div style={{ width: '380px', padding: '40px', borderRadius: '16px', backgroundColor: '#ffffff', boxShadow: '0 10px 30px rgba(0,0,0,0.08)' }}>
+        <h2 style={{ textAlign: 'center', color: '#2c3e50', marginTop: 0, marginBottom: '10px', fontSize: '26px', fontWeight: '800' }}>
+          Reset Password
+        </h2>
         
         {step === 1 ? (
           <form onSubmit={handleSendCode}>
-            <p style={{ fontSize: '14px', color: '#777', marginBottom: '20px', textAlign: 'center' }}>
+            <p style={{ fontSize: '14px', color: '#7f8c8d', marginBottom: '30px', textAlign: 'center', lineHeight: '1.5' }}>
               Enter your email address and we'll send you a 6-digit reset code.
             </p>
-            <input 
-              type="email" placeholder="Enter your email" required 
-              style={inputStyle}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-            <button type="submit" style={buttonStyle}>Send Code</button>
+            <div style={{ marginBottom: '25px' }}>
+              <label style={{ fontSize: '13px', color: '#7f8c8d', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Email Address</label>
+              <input 
+                type="email" placeholder="hello@cinnamon.co" required 
+                style={inputStyle}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+            </div>
+            <button type="submit" style={buttonStyle}>Send Recovery Code</button>
+            <div style={{ textAlign: 'center', marginTop: '25px' }}>
+               <Link to="/login" style={{ fontSize: '14px', color: '#95a5a6', textDecoration: 'none', fontWeight: '600' }}>&larr; Back to Login</Link>
+            </div>
           </form>
         ) : (
           <form onSubmit={handleResetPassword}>
-            <p style={{ fontSize: '14px', color: '#27ae60', marginBottom: '20px', textAlign: 'center', fontWeight: 'bold' }}>
-              Code sent! Check your inbox.
+            <p style={{ fontSize: '14px', color: '#27ae60', marginBottom: '25px', textAlign: 'center', fontWeight: 'bold' }}>
+              ✓ Code sent! Check your inbox.
             </p>
-            <input 
-              type="text" placeholder="6-Digit Code" required 
-              style={{...inputStyle, letterSpacing: '3px', textAlign: 'center', fontWeight: 'bold'}}
-              onChange={(e) => setCode(e.target.value)}
-            />
-            <input 
-              type="password" placeholder="New Password" required 
-              style={inputStyle}
-              onChange={(e) => setNewPassword(e.target.value)}
-            />
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{ fontSize: '13px', color: '#7f8c8d', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>6-Digit Code</label>
+              <input 
+                type="text" placeholder="------" required 
+                style={{...inputStyle, letterSpacing: '8px', textAlign: 'center', fontSize: '20px', fontWeight: 'bold'}}
+                onChange={(e) => setCode(e.target.value)}
+              />
+            </div>
+            <div style={{ marginBottom: '30px' }}>
+              <label style={{ fontSize: '13px', color: '#7f8c8d', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>New Password</label>
+              <input 
+                type="password" placeholder="••••••••" required 
+                style={inputStyle}
+                onChange={(e) => setNewPassword(e.target.value)}
+              />
+            </div>
             <button type="submit" style={buttonStyle}>Update Password</button>
           </form>
         )}
@@ -72,7 +86,7 @@ function ForgotPassword() {
   );
 }
 
-const inputStyle = { width: '100%', padding: '12px', marginBottom: '15px', borderRadius: '5px', border: '1px solid #ccc', boxSizing: 'border-box' };
-const buttonStyle = { width: '100%', padding: '12px', backgroundColor: '#d35400', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold' };
+const inputStyle = { width: '100%', padding: '14px', marginTop: '8px', borderRadius: '8px', border: '1px solid #e0e6ed', boxSizing: 'border-box', fontSize: '15px', backgroundColor: '#f8f9fa', transition: 'border 0.2s ease' };
+const buttonStyle = { width: '100%', padding: '14px', backgroundColor: '#d35400', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', fontSize: '16px', transition: 'background-color 0.2s ease', boxShadow: '0 4px 6px rgba(211, 84, 0, 0.2)' };
 
 export default ForgotPassword;

@@ -32,63 +32,81 @@ function Login() {
       toast.success(`Welcome, ${response.data.username}!`);
       navigate('/');
     } catch (err) {
-      console.error(err);
       toast.error('Google Login Failed. Please try again.');
     }
   };
 
   return (
-    <div style={{ display: 'flex', justifyContent: 'center', marginTop: '50px', fontFamily: 'Arial' }}>
-      <div style={{ width: '320px', padding: '30px 20px', border: '1px solid #ccc', borderRadius: '8px', backgroundColor: 'white', boxShadow: '0 4px 15px rgba(0,0,0,0.05)' }}>
+    <div style={{ display: 'flex', justifyContent: 'center', marginTop: '80px', marginBottom: '80px', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
+      {/* Sleek, borderless card with soft shadow */}
+      <div style={{ width: '380px', padding: '40px', borderRadius: '16px', backgroundColor: '#ffffff', boxShadow: '0 10px 30px rgba(0,0,0,0.08)' }}>
         
         <form onSubmit={handleSubmit}>
-          <h2 style={{ textAlign: 'center', color: '#d35400', marginTop: 0, marginBottom: '20px' }}>Login</h2>
+          <h2 style={{ textAlign: 'center', color: '#2c3e50', marginTop: 0, marginBottom: '30px', fontSize: '28px', fontWeight: '800' }}>
+            Welcome Back
+          </h2>
           
-          <div style={{ marginBottom: '15px' }}>
-            <label style={{ fontSize: '14px', color: '#555', fontWeight: 'bold' }}>Email or Username</label>
+          <div style={{ marginBottom: '20px' }}>
+            <label style={{ fontSize: '13px', color: '#7f8c8d', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Email or Username</label>
             <input 
               type="text" 
-              style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '5px', border: '1px solid #ccc', boxSizing: 'border-box' }}
+              placeholder="Enter your email or username"
+              style={inputStyle}
               onChange={(e) => setFormData({...formData, identifier: e.target.value})}
               required 
             />
           </div>
 
-          <div style={{ marginBottom: '20px' }}>
-            {/* --- NEW: Flexbox to perfectly align label and link! --- */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <label style={{ fontSize: '14px', color: '#555', fontWeight: 'bold' }}>Password</label>
-              <Link to="/forgot-password" style={{ fontSize: '12px', color: '#d35400', textDecoration: 'none', fontWeight: 'bold' }}>
-                Forgot Password?
+          <div style={{ marginBottom: '30px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px' }}>
+              <label style={{ fontSize: '13px', color: '#7f8c8d', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Password</label>
+              <Link to="/forgot-password" style={{ fontSize: '13px', color: '#d35400', textDecoration: 'none', fontWeight: '600' }}>
+                Forgot?
               </Link>
             </div>
             <input 
               type="password" 
-              style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '5px', border: '1px solid #ccc', boxSizing: 'border-box' }}
+              placeholder="••••••••"
+              style={inputStyle}
               onChange={(e) => setFormData({...formData, password: e.target.value})}
               required 
             />
           </div>
 
-          <button type="submit" style={{ width: '100%', padding: '12px', backgroundColor: '#d35400', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold', fontSize: '16px' }}>
-            Login
+          <button type="submit" style={buttonStyle}>
+            Log In
           </button>
         </form>
 
-        <div style={{ marginTop: '25px', textAlign: 'center', borderTop: '1px solid #eee', paddingTop: '20px' }}>
-          <p style={{ marginBottom: '15px', color: '#777', fontSize: '14px' }}>Or continue with</p>
+        <div style={{ marginTop: '30px', textAlign: 'center' }}>
+          {/* Beautiful horizontal divider */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '25px' }}>
+            <div style={{ height: '1px', backgroundColor: '#ecf0f1', flex: 1 }}></div>
+            <span style={{ padding: '0 15px', color: '#bdc3c7', fontSize: '13px', fontWeight: '600' }}>OR</span>
+            <div style={{ height: '1px', backgroundColor: '#ecf0f1', flex: 1 }}></div>
+          </div>
+          
           <div style={{ display: 'flex', justifyContent: 'center' }}>
             <GoogleLogin
               onSuccess={handleGoogleSuccess}
               onError={() => toast.error('Google Login Failed')} 
               useOneTap
+              shape="rectangular"
             />
           </div>
+          
+          <p style={{ marginTop: '30px', fontSize: '14px', color: '#7f8c8d' }}>
+            Don't have an account? <Link to="/signup" style={{ color: '#d35400', textDecoration: 'none', fontWeight: 'bold' }}>Sign up</Link>
+          </p>
         </div>
 
       </div>
     </div>
   );
 }
+
+// Reusable clean styles
+const inputStyle = { width: '100%', padding: '14px', marginTop: '8px', borderRadius: '8px', border: '1px solid #e0e6ed', boxSizing: 'border-box', fontSize: '15px', backgroundColor: '#f8f9fa', transition: 'border 0.2s ease' };
+const buttonStyle = { width: '100%', padding: '14px', backgroundColor: '#d35400', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', fontSize: '16px', transition: 'background-color 0.2s ease', boxShadow: '0 4px 6px rgba(211, 84, 0, 0.2)' };
 
 export default Login;
