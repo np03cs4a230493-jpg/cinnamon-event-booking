@@ -2,9 +2,9 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { GoogleLogin } from '@react-oauth/google'; 
+import toast from 'react-hot-toast'; // <--- NEW IMPORT
 
 function Login() {
-  // --- NEW: Using 'identifier' to hold either the email or username ---
   const [formData, setFormData] = useState({ identifier: '', password: '' });
   const navigate = useNavigate();
 
@@ -14,10 +14,13 @@ function Login() {
       const response = await axios.post('http://localhost:5001/api/login', formData);
       localStorage.setItem('user', JSON.stringify(response.data));
       window.dispatchEvent(new Event("storage"));
-      alert(`Welcome back, ${response.data.username}!`);
+      
+      // --- NEW: SUCCESS TOAST ---
+      toast.success(`Welcome back, ${response.data.username}!`);
       navigate('/'); 
     } catch (err) {
-      alert('Invalid Email or Password');
+      // --- NEW: ERROR TOAST ---
+      toast.error('Invalid Email/Username or Password');
     }
   };
 
@@ -29,11 +32,14 @@ function Login() {
       
       localStorage.setItem('user', JSON.stringify(response.data));
       window.dispatchEvent(new Event("storage"));
-      alert(`Welcome, ${response.data.username}!`);
+      
+      // --- NEW: SUCCESS TOAST ---
+      toast.success(`Welcome, ${response.data.username}!`);
       navigate('/');
     } catch (err) {
       console.error(err);
-      alert('Google Login Failed. Please try again.');
+      // --- NEW: ERROR TOAST ---
+      toast.error('Google Login Failed. Please try again.');
     }
   };
 
@@ -44,7 +50,6 @@ function Login() {
         <form onSubmit={handleSubmit}>
           <h2 style={{ textAlign: 'center', color: '#d35400', marginTop: 0 }}>Login</h2>
           
-          {/* --- NEW: COMBINED INPUT BOX --- */}
           <div style={{ marginBottom: '15px' }}>
             <label style={{ fontSize: '14px', color: '#555', fontWeight: 'bold' }}>Email or Username</label>
             <input 
@@ -75,7 +80,7 @@ function Login() {
           <div style={{ display: 'flex', justifyContent: 'center' }}>
             <GoogleLogin
               onSuccess={handleGoogleSuccess}
-              onError={() => alert('Google Login Failed')}
+              onError={() => toast.error('Google Login Failed')} // <-- Updated here too!
               useOneTap
             />
           </div>

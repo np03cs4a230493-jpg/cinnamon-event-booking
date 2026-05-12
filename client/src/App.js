@@ -1,4 +1,6 @@
 import './App.css';
+import { Toaster } from 'react-hot-toast';
+
 import React, { useState, useEffect, useRef } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useNavigate } from 'react-router-dom';
 
@@ -16,6 +18,9 @@ import Profile from './pages/Profile';
 function App() {
   return (
     <Router>
+      {/* --- NEW: The Toaster goes here! --- */}
+      <Toaster position="top-center" reverseOrder={false} />
+      
       <Navbar />
       <Routes>
         <Route path="/" element={<Home />} />
