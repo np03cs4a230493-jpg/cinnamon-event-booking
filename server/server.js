@@ -373,3 +373,34 @@ app.put('/api/events/:id', upload.single('image'), async (req, res) => {
     res.status(500).json({ message: "Error updating event" }); 
   }
 });
+
+// --- NEW: UPDATE USER PROFILE ---
+app.put('/api/users/:id', async (req, res) => {
+  try {
+    const { username, email } = req.body;
+    
+    // Safety Check: Make sure they aren't trying to change their email to one that already exists!
+    const emailTaken = await User.findOne({ email, _id: { $ne: req.params.id } });
+    if (emailTaken) {
+      return res.status(400).json({ message: "That email is already in use by another account." });
+    }
+
+    // Find the user and update their details
+    const updatedUser = await User.findByIdAndUpdate(
+      req.params.id, 
+      { username, email }, 
+      { new: true } // Returns the updated document
+    );
+
+    // Send back the fresh data formatted exactly like a login response!
+    res.json({ 
+      message: "Profile updated successfully!", 
+      username: updatedUser.username, 
+      email: updatedUser.email, 
+      _id: updatedUser._id, 
+      role: updatedUser.role 
+    });
+  } catch (err) {
+    res.status(500).json({ message: "Server error while updating profile." });
+  }
+});
