@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import StripeCheckout from 'react-stripe-checkout'; // <--- NEW IMPORT
+import toast from 'react-hot-toast'; 
 
 function EventDetails() {
   const { id } = useParams();
@@ -23,11 +24,11 @@ function EventDetails() {
   }, [id]);
 
   // --- UPDATED: Now receives a "token" from Stripe when the popup succeeds ---
-  const handleBooking = async (stripeToken) => {
+const handleBooking = async (stripeToken) => {
     const storedUser = localStorage.getItem('user');
     
     if (!storedUser) {
-      alert("Please Login to book a ticket!");
+      toast.error("Please Login to book a ticket!"); // <--- TOAST
       navigate('/login');
       return;
     }
@@ -36,18 +37,17 @@ function EventDetails() {
     const finalQuantity = quantity || 1;
 
     try {
-      // We process the booking in our database normally
       const res = await axios.post('http://localhost:5001/api/bookings', {
         userId: user._id, 
         eventId: event._id,
         quantity: finalQuantity 
       });
 
-      // Show a fancy alert with the Stripe Receipt ID to make it look super legit!
-      alert(`✅ Payment Successful!\nStripe Receipt: ${stripeToken.id}\n\n${res.data.message}`);
+      // Use toast for the success and receipt!
+      toast.success(`Payment Successful! Receipt: ${stripeToken.id}`); // <--- TOAST
       navigate('/my-bookings'); 
     } catch (err) {
-      alert(err.response?.data?.message || "Booking Failed. Please try again.");
+      toast.error(err.response?.data?.message || "Booking Failed. Please try again."); // <--- TOAST
     }
   };
 

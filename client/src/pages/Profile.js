@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import toast from 'react-hot-toast';
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -30,20 +31,19 @@ const Profile = () => {
   }, [navigate]);
 
   // --- SAVE PROFILE CHANGES ---
-  const handleSave = async (e) => {
+const handleSave = async (e) => {
     e.preventDefault();
     try {
       const response = await axios.put(`http://localhost:5001/api/users/${user._id}`, editData);
       
-      // Update local storage and our state with the new data
       localStorage.setItem('user', JSON.stringify(response.data));
-      window.dispatchEvent(new Event("storage")); // Updates the Navbar instantly!
+      window.dispatchEvent(new Event("storage")); 
       
       setUser(response.data);
       setIsEditing(false);
-      alert("✅ Profile updated successfully!");
+      toast.success("Profile updated successfully!"); // <--- TOAST
     } catch (err) {
-      alert(err.response?.data?.message || "Failed to update profile.");
+      toast.error(err.response?.data?.message || "Failed to update profile."); // <--- TOAST
     }
   };
 

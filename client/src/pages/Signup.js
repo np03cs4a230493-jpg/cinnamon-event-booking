@@ -1,46 +1,36 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast'; // <--- NEW IMPORT
 
 function Signup() {
-  const [formData, setFormData] = useState({ 
-    username: '', 
-    email: '', 
-    password: '',
-    adminKey: '' // <--- New State
-  });
-  
+  const [formData, setFormData] = useState({ username: '', email: '', password: '', adminKey: '' });
   const navigate = useNavigate();
 
-const handleSubmit = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // 1. Extract adminKey from the state!
     const { username, email, password, adminKey } = formData;
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      alert("❌ Please enter a valid email address.");
+      toast.error("Please enter a valid email address."); // <--- TOAST
       return; 
     }
 
     const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*#?&]{8,}$/;
     if (!passwordRegex.test(password)) {
-      alert("❌ Password must be at least 8 characters long and include at least one letter and one number.");
+      toast.error("Password must be at least 8 characters long and include a letter and a number."); // <--- TOAST
       return; 
     }
 
     try {
-      // 2. SEND THE SECRET CODE TO THE BACKEND!
       await axios.post('http://localhost:5001/api/register', { 
-        username, 
-        email, 
-        password, 
-        adminCode: adminKey // <--- Maps the frontend key to the backend expected name
+        username, email, password, adminCode: adminKey 
       });
-      alert("✅ Account created successfully!");
+      toast.success("Account created successfully!"); // <--- TOAST
       navigate('/login');
     } catch (err) {
-      alert(err.response?.data?.message || "Something went wrong.");
+      toast.error(err.response?.data?.message || "Something went wrong."); // <--- TOAST
     }
   };
 

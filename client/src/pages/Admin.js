@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
 
 function Admin() {
   const navigate = useNavigate();
@@ -85,39 +86,45 @@ function Admin() {
     formData.append('totalTickets', totalTickets);
     if (file) formData.append('image', file);
 
-    try {
+  try {
       if (editingId) {
         await axios.put(`http://localhost:5001/api/events/${editingId}`, formData);
-        alert("Event Updated Successfully!");
+        toast.success("Event Updated Successfully!"); // <--- TOAST
       } else {
         await axios.post('http://localhost:5001/api/events', formData);
-        alert("Event Created Successfully!");
+        toast.success("Event Created Successfully!"); // <--- TOAST
       }
-      window.location.reload(); 
+      setTimeout(() => window.location.reload(), 1500); // Give the toast 1.5s to show before reloading!
     } catch (err) { 
-      alert("Error saving event"); 
+      toast.error("Error saving event"); // <--- TOAST
     }
   };
 
-  const handleAcknowledge = async (id) => {
+const handleAcknowledge = async (id) => {
     try {
       await axios.patch(`http://localhost:5001/api/suggestions/${id}`, { status: 'accepted' });
       const acceptedSuggestion = suggestions.find(s => s._id === id);
       if (acceptedSuggestion) {
         setTitle(acceptedSuggestion.title);
         setDescription(acceptedSuggestion.description);
-        setActiveTab('manager'); // <--- Jump to the form tab automatically!
+        setActiveTab('manager'); 
       }
       setSuggestions(suggestions.map(s => s._id === id ? { ...s, status: 'accepted' } : s));
-    } catch (err) { alert("Error updating status"); }
+      toast.success("Suggestion Acknowledged!"); // <--- TOAST
+    } catch (err) { 
+      toast.error("Error updating status"); // <--- TOAST
+    }
   };
 
-  const handleDecline = async (id) => {
+const handleDecline = async (id) => {
     if (window.confirm("Delete this suggestion permanently?")) {
       try {
         await axios.delete(`http://localhost:5001/api/suggestions/${id}`);
         setSuggestions(suggestions.filter(s => s._id !== id));
-      } catch (err) { alert("Error deleting suggestion"); }
+        toast.success("Suggestion Deleted."); // <--- TOAST
+      } catch (err) { 
+        toast.error("Error deleting suggestion"); // <--- TOAST
+      }
     }
   };
 

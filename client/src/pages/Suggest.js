@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
 
 function Suggest() {
   const navigate = useNavigate();
@@ -14,12 +15,12 @@ function Suggest() {
       await axios.post('http://localhost:5001/api/suggestions', {
         ...formData,
         username: user ? user.username : 'Anonymous',
-        email: user ? user.email : null // <--- NEW: Grab their email so we can notify them!
+        email: user ? user.email : null
       });
-      alert("Thanks for your idea! We'll look into it.");
+      toast.success("Thanks for your idea! We'll look into it."); // <--- TOAST
       navigate('/');
     } catch (err) {
-      alert("Something went wrong. Try again.");
+      toast.error("Something went wrong. Try again."); // <--- TOAST
     }
   };
 
