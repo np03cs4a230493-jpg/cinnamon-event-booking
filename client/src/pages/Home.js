@@ -5,7 +5,10 @@ import axios from 'axios';
 function Home() {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
+  
+  // --- STATE FOR FILTERS ---
   const [filterDate, setFilterDate] = useState(''); 
+  const [searchQuery, setSearchQuery] = useState(''); // <--- NEW: Search state
 
   useEffect(() => {
     const fetchEvents = async () => {
@@ -40,25 +43,36 @@ function Home() {
     return `${yyyy}-${mm}-${dd}`;
   }))].sort(); 
 
+  // --- UPGRADED FILTER LOGIC ---
   const displayedEvents = events.filter(event => {
-    if (!filterDate) return true; 
+    // 1. Check Date Filter
+    let matchesDate = true;
+    if (filterDate) {
+      const eventDate = new Date(event.date);
+      const yyyy = eventDate.getFullYear();
+      const mm = String(eventDate.getMonth() + 1).padStart(2, '0');
+      const dd = String(eventDate.getDate()).padStart(2, '0');
+      matchesDate = `${yyyy}-${mm}-${dd}` === filterDate;
+    }
+
+    // 2. Check Text Search Filter (Matches title or description)
+    let matchesSearch = true;
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      const titleMatch = event.title?.toLowerCase().includes(query);
+      const descMatch = event.description?.toLowerCase().includes(query);
+      matchesSearch = titleMatch || descMatch;
+    }
     
-    const eventDate = new Date(event.date);
-    const yyyy = eventDate.getFullYear();
-    const mm = String(eventDate.getMonth() + 1).padStart(2, '0');
-    const dd = String(eventDate.getDate()).padStart(2, '0');
-    const formattedEventDate = `${yyyy}-${mm}-${dd}`;
-    
-    return formattedEventDate === filterDate;
+    // Must pass both filters to show up!
+    return matchesDate && matchesSearch;
   });
 
-  // --- NEW: SPLIT EVENTS INTO FEATURED AND REGULAR ---
   const featuredEvents = displayedEvents.filter(e => e.isFeatured);
   const regularEvents = displayedEvents.filter(e => !e.isFeatured);
 
   if (loading) return <div style={{ textAlign: 'center', padding: '50px', fontSize: '1.2rem', color: '#555' }}>Loading events...</div>;
 
-  // --- NEW: REUSABLE EVENT CARD COMPONENT ---
   const renderEventCard = (event, isFeaturedCard) => {
     const ticketsLeft = event.totalTickets - (event.soldTickets || 0);
     return (
@@ -66,7 +80,6 @@ function Home() {
            onMouseOver={(e) => e.currentTarget.style.transform = 'translateY(-5px)'}
            onMouseOut={(e) => e.currentTarget.style.transform = 'translateY(0)'}>
         
-        {/* Featured Badge */}
         {isFeaturedCard && (
           <div style={{ position: 'absolute', top: '15px', right: '15px', backgroundColor: '#d35400', color: 'white', padding: '6px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: 'bold', zIndex: 10, boxShadow: '0 4px 10px rgba(0,0,0,0.2)' }}>
             🌟 Featured
@@ -124,31 +137,47 @@ function Home() {
         <p style={{ fontSize: '1.2rem', color: '#7f8c8d', fontWeight: '500' }}>Discover and book the best coffeehouse events in town.</p>
       </div>
 
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '15px', marginBottom: '50px', backgroundColor: '#fff', padding: '25px', borderRadius: '16px', boxShadow: '0 10px 30px rgba(0,0,0,0.06)' }}>
-        <label style={{ fontSize: '13px', color: '#7f8c8d', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Filter by Date</label>
+      {/* --- UPGRADED FILTER & SEARCH BAR SECTION --- */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '20px', marginBottom: '50px', backgroundColor: '#fff', padding: '20px 25px', borderRadius: '16px', boxShadow: '0 10px 30px rgba(0,0,0,0.06)', flexWrap: 'wrap' }}>
         
-        <select 
-          value={filterDate}
-          onChange={(e) => setFilterDate(e.target.value)}
-          style={{ padding: '12px 16px', borderRadius: '8px', border: '1px solid #e0e6ed', fontSize: '15px', cursor: 'pointer', backgroundColor: '#f8f9fa', minWidth: '250px', outline: 'none', color: '#2c3e50', fontWeight: '600' }}
-        >
-          <option value="">🌟 All Upcoming Events</option>
-          {uniqueDates.map(date => {
-            const displayString = new Date(date).toLocaleDateString(undefined, { 
-              weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' 
-            });
-            return <option key={date} value={date}>{displayString}</option>
-          })}
-        </select>
+        {/* Text Search Bar */}
+        <div style={{ flex: '1 1 350px', position: 'relative' }}>
+          <span style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', fontSize: '18px', color: '#95a5a6' }}>🔍</span>
+          <input 
+            type="text" 
+            placeholder="Search for an event..." 
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            style={{ width: '100%', padding: '14px 16px 14px 45px', borderRadius: '8px', border: '1px solid #e0e6ed', fontSize: '15px', backgroundColor: '#f8f9fa', outline: 'none', transition: 'border 0.2s ease', boxSizing: 'border-box' }}
+          />
+        </div>
+
+        {/* Date Dropdown */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '15px', flex: '1 1 250px' }}>
+          <label style={{ fontSize: '13px', color: '#7f8c8d', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px', whiteSpace: 'nowrap' }}>Filter Date</label>
+          <select 
+            value={filterDate}
+            onChange={(e) => setFilterDate(e.target.value)}
+            style={{ width: '100%', padding: '14px 16px', borderRadius: '8px', border: '1px solid #e0e6ed', fontSize: '15px', cursor: 'pointer', backgroundColor: '#f8f9fa', outline: 'none', color: '#2c3e50', fontWeight: '600' }}
+          >
+            <option value="">🌟 All Upcoming Events</option>
+            {uniqueDates.map(date => {
+              const displayString = new Date(date).toLocaleDateString(undefined, { 
+                weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' 
+              });
+              return <option key={date} value={date}>{displayString}</option>
+            })}
+          </select>
+        </div>
+
       </div>
 
       {displayedEvents.length === 0 ? (
         <p style={{ textAlign: 'center', color: '#7f8c8d', fontSize: '1.2rem', marginTop: '40px', fontWeight: '500' }}>
-          No events currently available.
+          No events currently match your search.
         </p>
       ) : (
         <>
-          {/* --- NEW: FEATURED EVENTS SECTION --- */}
           {featuredEvents.length > 0 && (
             <div style={{ marginBottom: '60px' }}>
               <h2 style={{ color: '#d35400', fontSize: '2rem', fontWeight: '800', marginBottom: '25px', borderBottom: '2px solid #fff3e0', paddingBottom: '10px' }}>
@@ -160,7 +189,6 @@ function Home() {
             </div>
           )}
 
-          {/* REGULAR EVENTS SECTION */}
           {regularEvents.length > 0 && (
             <div>
               <h2 style={{ color: '#2c3e50', fontSize: '2rem', fontWeight: '800', marginBottom: '25px', borderBottom: '2px solid #ecf0f1', paddingBottom: '10px' }}>
