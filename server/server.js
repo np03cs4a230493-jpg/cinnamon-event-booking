@@ -374,10 +374,11 @@ app.put('/api/events/:id', upload.single('image'), async (req, res) => {
   }
 });
 
-// --- NEW: UPDATE USER PROFILE ---
+// --- UPDATED: UPDATE USER PROFILE (NOW WITH PASSWORD SUPPORT) ---
+// --- UPDATED: UPDATE USER PROFILE ---
 app.put('/api/users/:id', async (req, res) => {
   try {
-    const { username, email } = req.body;
+    const { username, email, password } = req.body;
     
     // Safety Check: Make sure they aren't trying to change their email to one that already exists!
     const emailTaken = await User.findOne({ email, _id: { $ne: req.params.id } });
@@ -385,14 +386,20 @@ app.put('/api/users/:id', async (req, res) => {
       return res.status(400).json({ message: "That email is already in use by another account." });
     }
 
+    const updateData = { username, email };
+
+    // If they typed a new password, hash it using the bcrypt already imported at the top of your file!
+    if (password && password.trim() !== '') {
+      updateData.password = await bcrypt.hash(password, 10);
+    }
+
     // Find the user and update their details
     const updatedUser = await User.findByIdAndUpdate(
       req.params.id, 
-      { username, email }, 
-      { new: true } // Returns the updated document
+      updateData, 
+      { new: true } 
     );
 
-    // Send back the fresh data formatted exactly like a login response!
     res.json({ 
       message: "Profile updated successfully!", 
       username: updatedUser.username, 
@@ -401,6 +408,8 @@ app.put('/api/users/:id', async (req, res) => {
       role: updatedUser.role 
     });
   } catch (err) {
+    // --- NEW: This will print the EXACT error in your backend terminal! ---
+    console.error("🚨 PROFILE UPDATE ERROR:", err); 
     res.status(500).json({ message: "Server error while updating profile." });
   }
 });
