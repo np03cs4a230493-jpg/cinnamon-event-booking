@@ -82,6 +82,7 @@ app.delete('/api/events/:id', async (req, res) => {
 });
 
 // --- UPDATED: REGISTER ROUTE (NOW SENDS OTP) ---
+// --- REGISTER ROUTE WITH STRICT "Lemonade" ADMIN CHECK ---
 app.post('/api/register', async (req, res) => {
   try {
     const { username, email, password, adminCode } = req.body;
@@ -93,11 +94,15 @@ app.post('/api/register', async (req, res) => {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    const role = adminCode === 'SECRET_ADMIN_KEY' ? 'admin' : 'user'; // Change 'SECRET_ADMIN_KEY' to your actual key
+    
+    // --- HERE IS YOUR SECRET KEY CHECK! ---
+    const role = adminCode === 'Lemonade' ? 'admin' : 'user'; 
     
     // Generate a 6-digit OTP
     const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
 
+    console.log(`\n☕ [DEVELOPER TESTING] New Signup OTP for ${email} is: ${verificationCode}\n`);
+    
     const newUser = new User({ 
       username, 
       email, 
@@ -108,7 +113,7 @@ app.post('/api/register', async (req, res) => {
     });
     await newUser.save();
 
-    // Send the verification email using your existing nodemailer transporter
+    // Send the verification email
     const mailOptions = {
       from: process.env.EMAIL_USER,
       to: email,

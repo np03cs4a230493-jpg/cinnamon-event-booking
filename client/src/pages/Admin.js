@@ -21,6 +21,9 @@ function Admin() {
   const [file, setFile] = useState(null);
   const [isFeatured, setIsFeatured] = useState(false);
 
+  // --- NEW: Custom Modal State ---
+  const [deleteModal, setDeleteModal] = useState({ isOpen: false, type: '', id: null, itemName: '' });
+
   useEffect(() => {
     const fetchData = async () => {
       const storedUser = localStorage.getItem('user');
@@ -114,24 +117,79 @@ function Admin() {
     }
   };
 
-  // --- CHANGED: Now updates status to 'declined' instead of deleting from DB! ---
-  const handleDecline = async (id) => {
-    if (window.confirm("Decline this suggestion?")) {
+  // --- NEW: Universal Confirm Function for the Modal ---
+  const confirmAction = async () => {
+    if (deleteModal.type === 'event') {
       try {
-        await axios.patch(`http://localhost:5001/api/suggestions/${id}`, { status: 'declined' });
-        setSuggestions(suggestions.map(s => s._id === id ? { ...s, status: 'declined' } : s));
+        await axios.delete(`http://localhost:5001/api/events/${deleteModal.id}`);
+        setEvents(events.filter(e => e._id !== deleteModal.id));
+        setStats({
+           ...stats,
+           eventStats: stats.eventStats.filter(s => s._id !== deleteModal.id)
+        });
+        toast.success("Event deleted permanently.");
+      } catch (err) {
+        toast.error("Error deleting event");
+      }
+    } else if (deleteModal.type === 'suggestion') {
+      try {
+        await axios.patch(`http://localhost:5001/api/suggestions/${deleteModal.id}`, { status: 'declined' });
+        setSuggestions(suggestions.map(s => s._id === deleteModal.id ? { ...s, status: 'declined' } : s));
         toast.success("Suggestion Declined.");
       } catch (err) { 
         toast.error("Error declining suggestion"); 
       }
     }
+    // Close modal after action
+    setDeleteModal({ isOpen: false, type: '', id: null, itemName: '' });
   };
 
-  // Helper to count pending suggestions for the red notification badge
   const pendingSuggestionsCount = suggestions.filter(s => s.status !== 'accepted' && s.status !== 'declined').length;
 
   return (
     <div style={{ padding: '40px 20px', maxWidth: '1200px', margin: '0 auto', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
+      
+      {/* --- NEW: CUSTOM SWEET-ALERT STYLE MODAL --- */}
+   {/* --- FIX: ISOLATED CUSTOM SWEET-ALERT STYLE MODAL (OUTSIDE OF FORMS) --- */}
+      {deleteModal.isOpen && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.4)', zIndex: 9999, display: 'flex', justifyContent: 'center', alignItems: 'center', backdropFilter: 'blur(3px)' }}>
+          <div style={{ backgroundColor: 'white', padding: '40px 30px', borderRadius: '8px', textAlign: 'center', maxWidth: '450px', width: '90%', boxShadow: '0 4px 20px rgba(0,0,0,0.15)', animation: 'popIn 0.3s ease' }}>
+            
+            {/* Warning Icon */}
+            <div style={{ width: '80px', height: '80px', border: '4px solid #f8bb86', borderRadius: '50%', display: 'flex', justifyContent: 'center', alignItems: 'center', margin: '0 auto 20px auto' }}>
+              <span style={{ color: '#f8bb86', fontSize: '50px', fontWeight: '300', lineHeight: '1' }}>!</span>
+            </div>
+            
+            <h2 style={{ margin: '0 0 15px 0', color: '#545454', fontSize: '28px', fontWeight: '600' }}>Are you sure?</h2>
+            <p style={{ color: '#797979', margin: '0 0 30px 0', fontSize: '16px' }}>
+              You want to {deleteModal.type === 'event' ? 'delete this Event' : 'decline this Suggestion'}!
+            </p>
+            
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '15px' }}>
+              <button 
+                type="button" /* <--- CRITICAL FIX: Stops form submission */
+                onClick={() => setDeleteModal({ isOpen: false, type: '', id: null, itemName: '' })} 
+                style={{ padding: '12px 20px', backgroundColor: '#c1c1c1', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '15px', fontWeight: '600', transition: 'background 0.2s' }}
+                onMouseOver={e => e.target.style.backgroundColor = '#b0b0b0'}
+                onMouseOut={e => e.target.style.backgroundColor = '#c1c1c1'}
+              >
+                Cancel
+              </button>
+              <button 
+                type="button" /* <--- CRITICAL FIX: Stops form submission */
+                onClick={confirmAction} 
+                style={{ padding: '12px 20px', backgroundColor: '#dd6b55', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '15px', fontWeight: '600', transition: 'background 0.2s', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}
+                onMouseOver={e => e.target.style.backgroundColor = '#c85e4b'}
+                onMouseOut={e => e.target.style.backgroundColor = '#dd6b55'}
+              >
+                Yes, {deleteModal.type === 'event' ? 'Delete it!' : 'Decline it!'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* ------------------------------------------- */}
+
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '30px' }}>
         <h1 style={{ color: '#2c3e50', fontSize: '2.8rem', margin: 0, fontWeight: '800', letterSpacing: '-0.5px' }}>Admin Dashboard</h1>
       </div>
@@ -173,7 +231,7 @@ function Admin() {
                   <th style={thStyle}>Revenue</th>
                   <th style={thStyle}>Remaining</th>
                   <th style={thStyle}>Occupancy</th>
-                  <th style={{...thStyle, textAlign: 'right'}}>Action</th>
+                  <th style={{...thStyle, textAlign: 'right'}}>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -191,8 +249,12 @@ function Admin() {
                       </div>
                     </td>
                     <td style={{...tdStyle, textAlign: 'right'}}>
-                       <button onClick={() => handleEditClick(stat._id)} style={{ color: '#3498db', background: '#e8f4f8', padding: '6px 12px', borderRadius: '6px', border: 'none', cursor: 'pointer', fontWeight: '700', fontSize: '13px' }}>
+                       <button onClick={() => handleEditClick(stat._id)} style={{ color: '#3498db', background: '#e8f4f8', padding: '6px 12px', borderRadius: '6px', border: 'none', cursor: 'pointer', fontWeight: '700', fontSize: '13px', marginRight: '8px' }}>
                          Edit
+                       </button>
+                       {/* TRIGGER CUSTOM MODAL ON DELETE CLICK */}
+                       <button onClick={() => setDeleteModal({ isOpen: true, type: 'event', id: stat._id, itemName: stat.title })} style={{ color: '#e74c3c', background: '#fdedec', padding: '6px 12px', borderRadius: '6px', border: 'none', cursor: 'pointer', fontWeight: '700', fontSize: '13px' }}>
+                         Delete
                        </button>
                     </td>
                   </tr>
@@ -240,10 +302,7 @@ function Admin() {
             </div>
             <div style={{ gridColumn: '1 / -1', display: 'flex', alignItems: 'center', gap: '10px' }}>
               <input 
-                type="checkbox" 
-                id="featured" 
-                checked={isFeatured} 
-                onChange={(e) => setIsFeatured(e.target.checked)} 
+                type="checkbox" id="featured" checked={isFeatured} onChange={(e) => setIsFeatured(e.target.checked)} 
                 style={{ width: '20px', height: '20px', cursor: 'pointer' }}
               />
               <label htmlFor="featured" style={{ ...labelStyle, marginBottom: 0, cursor: 'pointer' }}>🌟 Highlight as Featured Event</label>
@@ -310,18 +369,17 @@ function Admin() {
                 }}>
                   <h4 style={{ margin: '0 0 10px 0', color: '#2c3e50', fontSize: '1.2rem', fontWeight: '800' }}>
                     {sugg.title} 
-                    {/* Visual Badges for Admin */}
                     {sugg.status === 'accepted' && <span style={{ marginLeft: '10px', fontSize: '11px', backgroundColor: '#e8f8f5', color: '#27ae60', padding: '4px 8px', borderRadius: '12px', verticalAlign: 'middle' }}>ACCEPTED</span>}
                     {sugg.status === 'declined' && <span style={{ marginLeft: '10px', fontSize: '11px', backgroundColor: '#fdedec', color: '#e74c3c', padding: '4px 8px', borderRadius: '12px', verticalAlign: 'middle' }}>DECLINED</span>}
                   </h4>
                   <p style={{ fontSize: '13px', color: '#95a5a6', marginBottom: '15px' }}>Suggested by: <strong style={{ color: '#2c3e50' }}>{sugg.username}</strong></p>
                   <p style={{ color: '#555', fontSize: '15px', lineHeight: '1.5', flexGrow: 1, margin: '0 0 20px 0' }}>"{sugg.description}"</p>
 
-                  {/* Only show buttons if it is still Pending */}
+                  {/* UPDATE: Use custom modal instead of window.confirm */}
                   {sugg.status !== 'accepted' && sugg.status !== 'declined' && (
                     <div style={{ display: 'flex', gap: '10px' }}>
                       <button onClick={() => handleAcknowledge(sugg._id)} style={{ ...actionBtnStyle, backgroundColor: '#27ae60', flex: 1 }}>Accept & Draft</button>
-                      <button onClick={() => handleDecline(sugg._id)} style={{ ...actionBtnStyle, backgroundColor: '#e74c3c', flex: 1 }}>Decline</button>
+                      <button onClick={() => setDeleteModal({ isOpen: true, type: 'suggestion', id: sugg._id, itemName: sugg.title })} style={{ ...actionBtnStyle, backgroundColor: '#e74c3c', flex: 1 }}>Decline</button>
                     </div>
                   )}
                 </div>
@@ -344,5 +402,10 @@ const buttonStyle = { gridColumn: '1 / -1', padding: '16px', color: 'white', bor
 const thStyle = { padding: '20px', borderBottom: '2px solid #f1f2f6', color: '#95a5a6', fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: '700' };
 const tdStyle = { padding: '20px', color: '#2c3e50', fontSize: '15px' };
 const actionBtnStyle = { color: 'white', border: 'none', padding: '10px', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: '700', transition: 'opacity 0.2s ease' };
+
+// Optional: Add a simple CSS animation for the pop-in effect
+const styleSheet = document.createElement("style");
+styleSheet.innerText = `@keyframes popIn { 0% { opacity: 0; transform: scale(0.8); } 100% { opacity: 1; transform: scale(1); } }`;
+document.head.appendChild(styleSheet);
 
 export default Admin;
