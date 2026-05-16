@@ -22,6 +22,8 @@ function Admin() {
   const [description, setDescription] = useState('');
   const [totalTickets, setTotalTickets] = useState('');
   const [file, setFile] = useState(null);
+  // --- NEW: Featured State ---
+  const [isFeatured, setIsFeatured] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -59,6 +61,8 @@ function Admin() {
       setTotalTickets(eventToEdit.totalTickets);
       setDescription(eventToEdit.description);
       setEditingId(eventToEdit._id);
+      // --- NEW: Load existing featured status ---
+      setIsFeatured(eventToEdit.isFeatured || false);
 
       const d = new Date(eventToEdit.date);
       const formattedDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -71,6 +75,7 @@ function Admin() {
   const handleCancelEdit = () => {
     setEditingId(null);
     setTitle(''); setDate(''); setPrice(''); setTotalTickets(''); setDescription(''); setFile(null);
+    setIsFeatured(false); // Reset featured
     setActiveTab('dashboard'); 
   };
 
@@ -82,6 +87,7 @@ function Admin() {
     formData.append('price', price);
     formData.append('description', description);
     formData.append('totalTickets', totalTickets);
+    formData.append('isFeatured', isFeatured); // --- NEW: Send featured status ---
     if (file) formData.append('image', file);
 
     try {
@@ -239,6 +245,19 @@ function Admin() {
               <label style={labelStyle}>Description</label>
               <textarea value={description} placeholder="Describe the event details..." required style={{ ...inputStyle, height: '120px', resize: 'vertical' }} onChange={e => setDescription(e.target.value)}></textarea>
             </div>
+            
+            {/* --- NEW: Featured Checkbox --- */}
+            <div style={{ gridColumn: '1 / -1', display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <input 
+                type="checkbox" 
+                id="featured" 
+                checked={isFeatured} 
+                onChange={(e) => setIsFeatured(e.target.checked)} 
+                style={{ width: '20px', height: '20px', cursor: 'pointer' }}
+              />
+              <label htmlFor="featured" style={{ ...labelStyle, marginBottom: 0, cursor: 'pointer' }}>🌟 Highlight as Featured Event</label>
+            </div>
+
             <button type="submit" style={{...buttonStyle, backgroundColor: editingId ? '#d35400' : '#27ae60'}}>
               {editingId ? 'Save Changes' : 'Publish Event'}
             </button>

@@ -52,7 +52,69 @@ function Home() {
     return formattedEventDate === filterDate;
   });
 
+  // --- NEW: SPLIT EVENTS INTO FEATURED AND REGULAR ---
+  const featuredEvents = displayedEvents.filter(e => e.isFeatured);
+  const regularEvents = displayedEvents.filter(e => !e.isFeatured);
+
   if (loading) return <div style={{ textAlign: 'center', padding: '50px', fontSize: '1.2rem', color: '#555' }}>Loading events...</div>;
+
+  // --- NEW: REUSABLE EVENT CARD COMPONENT ---
+  const renderEventCard = (event, isFeaturedCard) => {
+    const ticketsLeft = event.totalTickets - (event.soldTickets || 0);
+    return (
+      <div key={event._id} style={{ backgroundColor: 'white', borderRadius: '16px', overflow: 'hidden', boxShadow: isFeaturedCard ? '0 10px 30px rgba(211, 84, 0, 0.15)' : '0 10px 30px rgba(0,0,0,0.08)', border: isFeaturedCard ? '2px solid #d35400' : 'none', display: 'flex', flexDirection: 'column', transition: 'transform 0.2s ease', position: 'relative' }}
+           onMouseOver={(e) => e.currentTarget.style.transform = 'translateY(-5px)'}
+           onMouseOut={(e) => e.currentTarget.style.transform = 'translateY(0)'}>
+        
+        {/* Featured Badge */}
+        {isFeaturedCard && (
+          <div style={{ position: 'absolute', top: '15px', right: '15px', backgroundColor: '#d35400', color: 'white', padding: '6px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: 'bold', zIndex: 10, boxShadow: '0 4px 10px rgba(0,0,0,0.2)' }}>
+            🌟 Featured
+          </div>
+        )}
+
+        <img 
+          src={event.image} 
+          alt={event.title} 
+          style={{ width: '100%', height: '220px', objectFit: 'cover' }} 
+        />
+        <div style={{ padding: '25px', display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
+          <h2 style={{ margin: '0 0 15px 0', color: '#2c3e50', fontSize: '1.4rem', fontWeight: '700' }}>{event.title}</h2>
+          
+          <div style={{ display: 'flex', justifyContent: 'space-between', color: '#7f8c8d', marginBottom: '15px', fontSize: '0.95rem', fontWeight: '500' }}>
+            <span>📅 {new Date(event.date).toLocaleDateString()}</span>
+            <span style={{ fontWeight: '800', color: '#27ae60' }}>
+              {event.price === 0 ? "FREE" : `NPR ${event.price}`}
+            </span>
+          </div>
+          
+          <p style={{ color: '#7f8c8d', fontSize: '0.95rem', flexGrow: 1, marginBottom: '25px', lineHeight: '1.6' }}>
+            {event.description?.length > 100 ? `${event.description.substring(0, 100)}...` : event.description}
+          </p>
+          
+          <Link 
+            to={`/event/${event._id}`} 
+            style={{ 
+              display: 'block', 
+              textAlign: 'center', 
+              width: '100%', 
+              padding: '14px', 
+              backgroundColor: ticketsLeft === 0 ? '#ecf0f1' : '#d35400', 
+              color: ticketsLeft === 0 ? '#95a5a6' : 'white', 
+              textDecoration: 'none', 
+              borderRadius: '8px', 
+              fontWeight: 'bold',
+              pointerEvents: ticketsLeft === 0 ? 'none' : 'auto',
+              boxSizing: 'border-box',
+              transition: 'background-color 0.2s'
+            }}
+          >
+            {ticketsLeft === 0 ? "Sold Out" : "View Details & Tickets"}
+          </Link>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '40px 20px', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
@@ -85,57 +147,31 @@ function Home() {
           No events currently available.
         </p>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '35px' }}>
-          {displayedEvents.map(event => { 
-            const ticketsLeft = event.totalTickets - (event.soldTickets || 0);
-
-            return (
-              <div key={event._id} style={{ backgroundColor: 'white', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 10px 30px rgba(0,0,0,0.08)', display: 'flex', flexDirection: 'column', transition: 'transform 0.2s ease' }}
-                   onMouseOver={(e) => e.currentTarget.style.transform = 'translateY(-5px)'}
-                   onMouseOut={(e) => e.currentTarget.style.transform = 'translateY(0)'}>
-                <img 
-                  src={event.image} 
-                  alt={event.title} 
-                  style={{ width: '100%', height: '220px', objectFit: 'cover' }} 
-                />
-                <div style={{ padding: '25px', display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
-                  <h2 style={{ margin: '0 0 15px 0', color: '#2c3e50', fontSize: '1.4rem', fontWeight: '700' }}>{event.title}</h2>
-                  
-                  <div style={{ display: 'flex', justifyContent: 'space-between', color: '#7f8c8d', marginBottom: '15px', fontSize: '0.95rem', fontWeight: '500' }}>
-                    <span>📅 {new Date(event.date).toLocaleDateString()}</span>
-                    <span style={{ fontWeight: '800', color: '#27ae60' }}>
-                      {event.price === 0 ? "FREE" : `NPR ${event.price}`}
-                    </span>
-                  </div>
-                  
-                  <p style={{ color: '#7f8c8d', fontSize: '0.95rem', flexGrow: 1, marginBottom: '25px', lineHeight: '1.6' }}>
-                    {event.description?.length > 100 ? `${event.description.substring(0, 100)}...` : event.description}
-                  </p>
-                  
-                  <Link 
-                    to={`/event/${event._id}`} 
-                    style={{ 
-                      display: 'block', 
-                      textAlign: 'center', 
-                      width: '100%', 
-                      padding: '14px', 
-                      backgroundColor: ticketsLeft === 0 ? '#ecf0f1' : '#d35400', 
-                      color: ticketsLeft === 0 ? '#95a5a6' : 'white', 
-                      textDecoration: 'none', 
-                      borderRadius: '8px', 
-                      fontWeight: 'bold',
-                      pointerEvents: ticketsLeft === 0 ? 'none' : 'auto',
-                      boxSizing: 'border-box',
-                      transition: 'background-color 0.2s'
-                    }}
-                  >
-                    {ticketsLeft === 0 ? "Sold Out" : "View Details & Tickets"}
-                  </Link>
-                </div>
+        <>
+          {/* --- NEW: FEATURED EVENTS SECTION --- */}
+          {featuredEvents.length > 0 && (
+            <div style={{ marginBottom: '60px' }}>
+              <h2 style={{ color: '#d35400', fontSize: '2rem', fontWeight: '800', marginBottom: '25px', borderBottom: '2px solid #fff3e0', paddingBottom: '10px' }}>
+                🌟 Featured Events
+              </h2>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '35px' }}>
+                {featuredEvents.map(event => renderEventCard(event, true))}
               </div>
-            )
-          })}
-        </div>
+            </div>
+          )}
+
+          {/* REGULAR EVENTS SECTION */}
+          {regularEvents.length > 0 && (
+            <div>
+              <h2 style={{ color: '#2c3e50', fontSize: '2rem', fontWeight: '800', marginBottom: '25px', borderBottom: '2px solid #ecf0f1', paddingBottom: '10px' }}>
+                {featuredEvents.length > 0 ? "More Upcoming Events" : "All Events"}
+              </h2>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '35px' }}>
+                {regularEvents.map(event => renderEventCard(event, false))}
+              </div>
+            </div>
+          )}
+        </>
       )}
     </div>
   );
