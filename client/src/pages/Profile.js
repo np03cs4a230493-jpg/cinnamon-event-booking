@@ -36,8 +36,25 @@ const Profile = () => {
 
   }, [navigate]);
 
-  const handleSave = async (e) => {
+const handleSave = async (e) => {
     e.preventDefault();
+    
+    // 1. Strict Email Validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(editData.email)) {
+      toast.error("Please enter a valid email address."); 
+      return; 
+    }
+
+    // --- NEW: 2. Strict Password Validation (Only if they typed a new one!) ---
+    if (editData.password && editData.password.trim() !== '') {
+      const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*#?&]{8,}$/;
+      if (!passwordRegex.test(editData.password)) {
+        toast.error("Password must be at least 8 characters long and include a letter and a number."); 
+        return; 
+      }
+    }
+
     try {
       const response = await axios.put(`http://localhost:5001/api/users/${user._id}`, editData);
       localStorage.setItem('user', JSON.stringify(response.data));

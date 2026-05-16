@@ -8,8 +8,19 @@ function Login() {
   const [formData, setFormData] = useState({ identifier: '', password: '' });
   const navigate = useNavigate();
 
-  const handleSubmit = async (e) => {
+const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // --- NEW: SMART EMAIL/USERNAME VALIDATION ---
+    // If they typed an '@', they are trying to use an email. Let's make sure it's valid!
+    if (formData.identifier.includes('@')) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(formData.identifier)) {
+        toast.error("Please enter a valid email address.");
+        return;
+      }
+    }
+
     try {
       const response = await axios.post('http://localhost:5001/api/login', formData);
       localStorage.setItem('user', JSON.stringify(response.data));
