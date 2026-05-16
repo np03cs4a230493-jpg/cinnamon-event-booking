@@ -5,6 +5,9 @@ const UserSchema = new mongoose.Schema({
   email:    { type: String, required: true, unique: true },
   password: { type: String, required: true },
   role: { type: String, default: 'user', enum: ['user', 'admin'] },
+  // Add these two lines to your existing User schema:
+  isVerified: { type: Boolean, default: false },
+  verificationCode: { type: String },
   
   // --- NEW: FORGOT PASSWORD FIELDS ---
   resetCode: { type: String },

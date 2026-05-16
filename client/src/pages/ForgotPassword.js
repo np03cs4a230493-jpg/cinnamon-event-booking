@@ -58,14 +58,25 @@ function ForgotPassword() {
             </div>
           </form>
         ) : (
-          <form onSubmit={handleResetPassword}>
+    <form onSubmit={handleResetPassword}>
             <p style={{ fontSize: '14px', color: '#27ae60', marginBottom: '25px', textAlign: 'center', fontWeight: 'bold' }}>
               ✓ Code sent! Check your inbox.
             </p>
+
+            {/* --- FIX: Hidden "Honeypot" input to catch the aggressive browser autofill! --- */}
+            <input type="email" autoComplete="username" value={email} readOnly style={{ display: 'none' }} />
+
             <div style={{ marginBottom: '20px' }}>
               <label style={{ fontSize: '13px', color: '#7f8c8d', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>6-Digit Code</label>
               <input 
-                type="text" placeholder="------" required 
+                type="text" 
+                name="otp-code"
+                inputMode="numeric" /* Tells mobile phones to open the number keypad */
+                pattern="[0-9]*" 
+                placeholder="------" 
+                required 
+                autoComplete="one-time-code"
+                maxLength="6"
                 style={{...inputStyle, letterSpacing: '8px', textAlign: 'center', fontSize: '20px', fontWeight: 'bold'}}
                 onChange={(e) => setCode(e.target.value)}
               />
@@ -73,7 +84,10 @@ function ForgotPassword() {
             <div style={{ marginBottom: '30px' }}>
               <label style={{ fontSize: '13px', color: '#7f8c8d', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>New Password</label>
               <input 
-                type="password" placeholder="••••••••" required 
+                type="password" 
+                autoComplete="new-password" /* Explicitly tells the browser this is a NEW password */
+                placeholder="••••••••" 
+                required 
                 style={inputStyle}
                 onChange={(e) => setNewPassword(e.target.value)}
               />

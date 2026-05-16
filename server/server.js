@@ -81,44 +81,100 @@ app.delete('/api/events/:id', async (req, res) => {
   } catch (err) { res.status(500).json({ message: "Error deleting event" }); }
 });
 
+// --- UPDATED: REGISTER ROUTE (NOW SENDS OTP) ---
 app.post('/api/register', async (req, res) => {
   try {
-    // 1. Grab the adminCode along with the normal data
-    const { username, email, password, adminCode } = req.body; 
+    const { username, email, password, adminCode } = req.body;
 
-    // Validation checks...
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*#?&]{8,}$/;
-
-    if (!emailRegex.test(email)) {
-      return res.status(400).json({ message: "Invalid email format." });
-    }
-    if (!passwordRegex.test(password)) {
-      return res.status(400).json({ message: "Password must be at least 8 characters and contain a number and a letter." });
-    }
-
+    // Check if user already exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
-      return res.status(400).json({ message: "Email is already registered." });
+      return res.status(400).json({ message: "User already exists with this email." });
     }
 
-    // --- 2. SMART ROLE ASSIGNMENT ---
-    // If they typed the secret code, make them an admin. Otherwise, normal user.
-    const assignedRole = adminCode === 'Lemonade' ? 'admin' : 'user';
-
     const hashedPassword = await bcrypt.hash(password, 10);
+    const role = adminCode === 'SECRET_ADMIN_KEY' ? 'admin' : 'user'; // Change 'SECRET_ADMIN_KEY' to your actual key
+    
+    // Generate a 6-digit OTP
+    const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+
     const newUser = new User({ 
       username, 
       email, 
-      password: hashedPassword,
-      role: assignedRole // <-- Use the smart role here!
+      password: hashedPassword, 
+      role,
+      isVerified: false,
+      verificationCode 
+    });
+    await newUser.save();
+
+    // Send the verification email using your existing nodemailer transporter
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: 'Verify your Cinnamon & Co. Account',
+      html: `
+        <h2>Welcome to Cinnamon & Co.! ☕</h2>
+        <p>Your account has been created. Please use the 6-digit code below to verify your email address:</p>
+        <h1 style="font-size: 40px; letter-spacing: 5px; color: #d35400;">${verificationCode}</h1>
+        <p>If you did not request this, please ignore this email.</p>
+      `
+    };
+
+    await transporter.sendMail(mailOptions);
+
+    res.status(201).json({ message: "Verification code sent to email!" });
+  } catch (err) {
+    console.error("REGISTER ERROR:", err);
+    res.status(500).json({ message: "Error registering user" });
+  }
+});
+
+// UPDATED: VERIFY EMAIL ROUTE (NOW RETURNS THE USER OBJECT)
+app.post('/api/verify-email', async (req, res) => {
+  try {
+    const { email, code } = req.body;
+    const user = await User.findOne({ email });
+
+    if (!user) return res.status(404).json({ message: "User not found." });
+    if (user.isVerified) return res.status(400).json({ message: "Email is already verified." });
+    if (user.verificationCode !== code) return res.status(400).json({ message: "Invalid verification code." });
+
+    user.isVerified = true;
+    user.verificationCode = undefined;
+    await user.save();
+
+    // Send back user data so the frontend can auto-login/update state
+    res.json({ 
+      message: "Email verified successfully!",
+      user: { _id: user._id, username: user.username, email: user.email, role: user.role }
+    });
+  } catch (err) {
+    res.status(500).json({ message: "Server error during verification." });
+  }
+});
+
+// 3. UPDATED: LOGIN ROUTE (RETURNS UNVERIFIED EMAIL)
+app.post('/api/login', async (req, res) => {
+  try {
+    const { identifier, password } = req.body;
+    const user = await User.findOne({
+      $or: [{ email: identifier }, { username: identifier }]
     });
 
-    await newUser.save();
-    res.status(201).json({ message: "User created successfully" });
+    if (!user) return res.status(400).json({ message: "Invalid credentials" });
 
-  } catch (err) { 
-    res.status(500).json({ message: "Server error during registration" }); 
+    // Block login if unverified, BUT return the email so the frontend knows where to send the code!
+    if (!user.isVerified) {
+      return res.status(403).json({ message: "Please verify your email address first!", email: user.email });
+    }
+
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) return res.status(400).json({ message: "Invalid credentials" });
+
+    res.json({ _id: user._id, username: user.username, email: user.email, role: user.role });
+  } catch (err) {
+    res.status(500).json({ message: "Server error" });
   }
 });
 
@@ -374,41 +430,60 @@ app.put('/api/events/:id', upload.single('image'), async (req, res) => {
   }
 });
 
-// --- UPDATED: UPDATE USER PROFILE (NOW WITH PASSWORD SUPPORT) ---
-// --- UPDATED: UPDATE USER PROFILE ---
+-
+// UPDATED: PROFILE UPDATE ROUTE
 app.put('/api/users/:id', async (req, res) => {
   try {
     const { username, email, password } = req.body;
-    
-    // Safety Check: Make sure they aren't trying to change their email to one that already exists!
-    const emailTaken = await User.findOne({ email, _id: { $ne: req.params.id } });
-    if (emailTaken) {
-      return res.status(400).json({ message: "That email is already in use by another account." });
+    const user = await User.findById(req.params.id);
+    if (!user) return res.status(404).json({ message: "User not found." });
+
+    const emailChanged = email !== user.email;
+
+    if (emailChanged) {
+      // Check if the NEW email is already taken by someone else
+      const emailTaken = await User.findOne({ email });
+      if (emailTaken) {
+        return res.status(400).json({ message: "That email is already in use by another account." });
+      }
+      
+      // Revoke verification and generate new code
+      user.isVerified = false;
+      user.verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+      
+      // Send OTP to the NEW email
+      const mailOptions = {
+        from: process.env.EMAIL_USER,
+        to: email,
+        subject: 'Verify your new email for Cinnamon & Co.',
+        html: `
+          <h2>Cinnamon & Co. Security ☕</h2>
+          <p>You recently changed your email address. Please use the 6-digit code below to verify it:</p>
+          <h1 style="font-size: 40px; letter-spacing: 5px; color: #d35400;">${user.verificationCode}</h1>
+          <p>If you did not make this change, please contact support immediately.</p>
+        `
+      };
+      await transporter.sendMail(mailOptions);
     }
 
-    const updateData = { username, email };
+    user.username = username;
+    user.email = email;
 
-    // If they typed a new password, hash it using the bcrypt already imported at the top of your file!
     if (password && password.trim() !== '') {
-      updateData.password = await bcrypt.hash(password, 10);
+      user.password = await bcrypt.hash(password, 10);
     }
 
-    // Find the user and update their details
-    const updatedUser = await User.findByIdAndUpdate(
-      req.params.id, 
-      updateData, 
-      { new: true } 
-    );
+    await user.save();
 
     res.json({ 
-      message: "Profile updated successfully!", 
-      username: updatedUser.username, 
-      email: updatedUser.email, 
-      _id: updatedUser._id, 
-      role: updatedUser.role 
+      message: emailChanged ? "Please verify your new email." : "Profile updated successfully!", 
+      username: user.username, 
+      email: user.email, 
+      _id: user._id, 
+      role: user.role,
+      emailChanged // <--- We send this flag to the frontend!
     });
   } catch (err) {
-    // --- NEW: This will print the EXACT error in your backend terminal! ---
     console.error("🚨 PROFILE UPDATE ERROR:", err); 
     res.status(500).json({ message: "Server error while updating profile." });
   }
@@ -423,6 +498,8 @@ app.post('/api/forgot-password', async (req, res) => {
 
     // 1. Generate a random 6-digit code
     const resetCode = Math.floor(100000 + Math.random() * 900000).toString();
+
+    console.log(`\n🚨 DEVELOPER CHEAT CODE: The OTP for ${email} is: ${resetCode}\n`);
     
     // 2. Save it to the user's database profile (expires in 15 mins)
     user.resetCode = resetCode;
