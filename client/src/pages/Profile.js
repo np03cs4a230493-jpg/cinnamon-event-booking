@@ -8,9 +8,10 @@ const Profile = () => {
   
   const [user, setUser] = useState(null);
   const [bookings, setBookings] = useState([]);
+  // --- NEW: State to hold their suggestions ---
+  const [mySuggestions, setMySuggestions] = useState([]);
   
   const [isEditing, setIsEditing] = useState(false);
-  // --- NEW: Added password to state ---
   const [editData, setEditData] = useState({ username: '', email: '', password: '' });
 
   useEffect(() => {
@@ -21,25 +22,28 @@ const Profile = () => {
     }
     
     setUser(storedUser);
-    // Initialize state with empty password so it doesn't overwrite unless they type something
     setEditData({ username: storedUser.username, email: storedUser.email, password: '' });
 
+    // Fetch this specific user's bookings
     axios.get(`http://localhost:5001/api/bookings/user/${storedUser._id}`)
       .then(res => setBookings(res.data))
       .catch(err => console.error("Error fetching bookings:", err));
+
+    // --- NEW: Fetch this specific user's suggestions ---
+    axios.get(`http://localhost:5001/api/suggestions/user/${storedUser.email}`)
+      .then(res => setMySuggestions(res.data))
+      .catch(err => console.error("Error fetching suggestions:", err));
+
   }, [navigate]);
 
   const handleSave = async (e) => {
     e.preventDefault();
     try {
       const response = await axios.put(`http://localhost:5001/api/users/${user._id}`, editData);
-      
       localStorage.setItem('user', JSON.stringify(response.data));
       window.dispatchEvent(new Event("storage")); 
-      
       setUser(response.data);
       setIsEditing(false);
-      // Clear out the password field from state after successful save
       setEditData({ ...editData, password: '' });
       toast.success("Profile updated successfully!"); 
     } catch (err) {
@@ -55,7 +59,7 @@ const Profile = () => {
         My Profile
       </h1>
       
-      {/* --- USER INFO CARD --- */}
+      {/* USER INFO CARD */}
       <div style={{ backgroundColor: '#fff', padding: '35px', borderRadius: '16px', marginBottom: '40px', boxShadow: '0 10px 30px rgba(0,0,0,0.06)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px' }}>
           <h2 style={{ margin: 0, color: '#2c3e50', fontSize: '1.5rem', fontWeight: '700' }}>👤 Account Details</h2>
@@ -70,36 +74,16 @@ const Profile = () => {
           <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
             <div>
               <label style={labelStyle}>Username</label>
-              <input 
-                type="text" 
-                value={editData.username} 
-                onChange={(e) => setEditData({...editData, username: e.target.value})} 
-                style={inputStyle} 
-                required 
-              />
+              <input type="text" value={editData.username} onChange={(e) => setEditData({...editData, username: e.target.value})} style={inputStyle} required />
             </div>
             <div>
               <label style={labelStyle}>Email Address</label>
-              <input 
-                type="email" 
-                value={editData.email} 
-                onChange={(e) => setEditData({...editData, email: e.target.value})} 
-                style={inputStyle} 
-                required 
-              />
+              <input type="email" value={editData.email} onChange={(e) => setEditData({...editData, email: e.target.value})} style={inputStyle} required />
             </div>
-            {/* --- NEW: PASSWORD INPUT --- */}
             <div>
               <label style={labelStyle}>New Password <span style={{color: '#bdc3c7', textTransform: 'none', fontWeight: '500'}}>(Leave blank to keep current)</span></label>
-              <input 
-                type="password" 
-                placeholder="••••••••"
-                value={editData.password} 
-                onChange={(e) => setEditData({...editData, password: e.target.value})} 
-                style={inputStyle} 
-              />
+              <input type="password" placeholder="••••••••" value={editData.password} onChange={(e) => setEditData({...editData, password: e.target.value})} style={inputStyle} />
             </div>
-
             <div style={{ display: 'flex', gap: '15px', marginTop: '10px' }}>
               <button type="submit" style={saveBtnStyle}>💾 Save Changes</button>
               <button type="button" onClick={() => { setIsEditing(false); setEditData({ username: user.username, email: user.email, password: '' }); }} style={cancelBtnStyle}>✖ Cancel</button>
@@ -119,9 +103,8 @@ const Profile = () => {
         )}
       </div>
 
-      {/* --- TICKET HISTORY --- */}
+      {/* TICKET HISTORY */}
       <h2 style={{ color: '#2c3e50', fontSize: '1.8rem', fontWeight: '800', marginBottom: '25px' }}>🎟️ My Tickets ({bookings.length})</h2>
-      
       {bookings.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '40px', backgroundColor: '#fff', borderRadius: '16px', boxShadow: '0 10px 30px rgba(0,0,0,0.04)' }}>
           <p style={{ color: '#7f8c8d', fontSize: '1.1rem', fontWeight: '500', margin: 0 }}>You haven't booked any events yet. Time to grab some coffee and enjoy a show!</p>
@@ -137,11 +120,51 @@ const Profile = () => {
           ))}
         </div>
       )}
+
+      {/* --- NEW: MY EVENT IDEAS SECTION --- */}
+      <h2 style={{ color: '#2c3e50', fontSize: '1.8rem', fontWeight: '800', marginTop: '50px', marginBottom: '25px' }}>💡 My Event Ideas ({mySuggestions.length})</h2>
+      {mySuggestions.length === 0 ? (
+        <div style={{ textAlign: 'center', padding: '40px', backgroundColor: '#fff', borderRadius: '16px', boxShadow: '0 10px 30px rgba(0,0,0,0.04)' }}>
+          <p style={{ color: '#7f8c8d', fontSize: '1.1rem', fontWeight: '500', margin: 0 }}>You haven't submitted any ideas yet. Have a cool event in mind?</p>
+        </div>
+      ) : (
+        <div style={{ display: 'grid', gap: '20px' }}>
+          {mySuggestions.map(sugg => {
+            // Dynamic styling based on Admin's decision
+            let statusColor = '#f1c40f'; // Yellow for Pending
+            let statusText = 'PENDING REVIEW';
+            let bgColor = '#fcf9e8';
+            
+            if (sugg.status === 'accepted') {
+              statusColor = '#27ae60'; // Green
+              statusText = 'ACCEPTED! 🎉';
+              bgColor = '#e8f8f5';
+            } else if (sugg.status === 'declined') {
+              statusColor = '#e74c3c'; // Red
+              statusText = 'NOT RIGHT NOW';
+              bgColor = '#fdedec';
+            }
+
+            return (
+              <div key={sugg._id} style={{ borderLeft: `6px solid ${statusColor}`, backgroundColor: '#fff', padding: '25px', borderRadius: '12px', boxShadow: '0 10px 30px rgba(0,0,0,0.06)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
+                  <h3 style={{ margin: '0', color: '#2c3e50', fontSize: '1.3rem', fontWeight: '700' }}>{sugg.title}</h3>
+                  <span style={{ backgroundColor: bgColor, color: statusColor, padding: '6px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: '800', letterSpacing: '0.5px' }}>
+                    {statusText}
+                  </span>
+                </div>
+                <p style={{ margin: '0', color: '#555', fontSize: '1rem', lineHeight: '1.5' }}>"{sugg.description}"</p>
+              </div>
+            )
+          })}
+        </div>
+      )}
+
     </div>
   );
 };
 
-// --- MODERN STYLES ---
+// --- STYLES ---
 const labelStyle = { display: 'block', fontSize: '13px', color: '#7f8c8d', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px' };
 const inputStyle = { width: '100%', padding: '14px', borderRadius: '8px', border: '1px solid #e0e6ed', fontSize: '15px', backgroundColor: '#f8f9fa', transition: 'border 0.2s ease', outline: 'none', boxSizing: 'border-box' };
 const editBtnStyle = { backgroundColor: '#f8f9fa', border: '1px solid #e0e6ed', color: '#2c3e50', padding: '10px 18px', borderRadius: '8px', cursor: 'pointer', fontWeight: '700', fontSize: '14px', transition: 'all 0.2s ease' };

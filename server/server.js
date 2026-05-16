@@ -477,3 +477,14 @@ app.post('/api/reset-password', async (req, res) => {
     res.status(500).json({ message: "Error resetting password." });
   }
 });
+
+// --- NEW: FETCH A SPECIFIC USER'S SUGGESTIONS ---
+app.get('/api/suggestions/user/:email', async (req, res) => {
+  try {
+    // Find all suggestions where the email matches the logged-in user
+    const userSuggestions = await Suggestion.find({ email: req.params.email });
+    res.json(userSuggestions);
+  } catch (err) {
+    res.status(500).json({ message: "Error fetching user suggestions" });
+  }
+});

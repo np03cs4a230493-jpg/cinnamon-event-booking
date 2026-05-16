@@ -5,24 +5,20 @@ import toast from 'react-hot-toast';
 
 function Admin() {
   const navigate = useNavigate();
-  
   const [activeTab, setActiveTab] = useState('dashboard');
 
-  // --- STATE MANAGEMENT ---
   const [events, setEvents] = useState([]);
   const [stats, setStats] = useState({ eventStats: [], grandTotal: { revenue: 0, sold: 0 } });
   const [suggestions, setSuggestions] = useState([]);
   const [bookings, setBookings] = useState([]);
   const [editingId, setEditingId] = useState(null);
 
-  // Form State
   const [title, setTitle] = useState('');
   const [date, setDate] = useState('');
   const [price, setPrice] = useState('');
   const [description, setDescription] = useState('');
   const [totalTickets, setTotalTickets] = useState('');
   const [file, setFile] = useState(null);
-  // --- NEW: Featured State ---
   const [isFeatured, setIsFeatured] = useState(false);
 
   useEffect(() => {
@@ -52,7 +48,6 @@ function Admin() {
     fetchData();
   }, [navigate]);
 
-  // --- HANDLERS ---
   const handleEditClick = (id) => {
     const eventToEdit = events.find(e => e._id === id);
     if (eventToEdit) {
@@ -61,7 +56,6 @@ function Admin() {
       setTotalTickets(eventToEdit.totalTickets);
       setDescription(eventToEdit.description);
       setEditingId(eventToEdit._id);
-      // --- NEW: Load existing featured status ---
       setIsFeatured(eventToEdit.isFeatured || false);
 
       const d = new Date(eventToEdit.date);
@@ -75,7 +69,7 @@ function Admin() {
   const handleCancelEdit = () => {
     setEditingId(null);
     setTitle(''); setDate(''); setPrice(''); setTotalTickets(''); setDescription(''); setFile(null);
-    setIsFeatured(false); // Reset featured
+    setIsFeatured(false);
     setActiveTab('dashboard'); 
   };
 
@@ -87,7 +81,7 @@ function Admin() {
     formData.append('price', price);
     formData.append('description', description);
     formData.append('totalTickets', totalTickets);
-    formData.append('isFeatured', isFeatured); // --- NEW: Send featured status ---
+    formData.append('isFeatured', isFeatured); 
     if (file) formData.append('image', file);
 
     try {
@@ -120,17 +114,21 @@ function Admin() {
     }
   };
 
+  // --- CHANGED: Now updates status to 'declined' instead of deleting from DB! ---
   const handleDecline = async (id) => {
-    if (window.confirm("Delete this suggestion permanently?")) {
+    if (window.confirm("Decline this suggestion?")) {
       try {
-        await axios.delete(`http://localhost:5001/api/suggestions/${id}`);
-        setSuggestions(suggestions.filter(s => s._id !== id));
-        toast.success("Suggestion Deleted.");
+        await axios.patch(`http://localhost:5001/api/suggestions/${id}`, { status: 'declined' });
+        setSuggestions(suggestions.map(s => s._id === id ? { ...s, status: 'declined' } : s));
+        toast.success("Suggestion Declined.");
       } catch (err) { 
-        toast.error("Error deleting suggestion"); 
+        toast.error("Error declining suggestion"); 
       }
     }
   };
+
+  // Helper to count pending suggestions for the red notification badge
+  const pendingSuggestionsCount = suggestions.filter(s => s.status !== 'accepted' && s.status !== 'declined').length;
 
   return (
     <div style={{ padding: '40px 20px', maxWidth: '1200px', margin: '0 auto', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
@@ -138,19 +136,16 @@ function Admin() {
         <h1 style={{ color: '#2c3e50', fontSize: '2.8rem', margin: 0, fontWeight: '800', letterSpacing: '-0.5px' }}>Admin Dashboard</h1>
       </div>
 
-      {/* --- TAB NAVIGATION BAR --- */}
       <div style={{ display: 'flex', gap: '15px', marginBottom: '40px', paddingBottom: '15px', overflowX: 'auto', borderBottom: '2px solid #ecf0f1' }}>
         <button onClick={() => setActiveTab('dashboard')} style={getTabStyle(activeTab === 'dashboard')}>📊 Overview</button>
         <button onClick={() => setActiveTab('manager')} style={getTabStyle(activeTab === 'manager')}>🛠️ Event Manager</button>
         <button onClick={() => setActiveTab('guests')} style={getTabStyle(activeTab === 'guests')}>📝 Guest List</button>
         <button onClick={() => setActiveTab('suggestions')} style={getTabStyle(activeTab === 'suggestions')}>
-          💡 Suggestions {suggestions.filter(s => s.status !== 'accepted').length > 0 && <span style={badgeStyle}>{suggestions.filter(s => s.status !== 'accepted').length}</span>}
+          💡 Suggestions {pendingSuggestionsCount > 0 && <span style={badgeStyle}>{pendingSuggestionsCount}</span>}
         </button>
       </div>
 
-      {/* =========================================
-             TAB 1: DASHBOARD OVERVIEW 
-          ========================================= */}
+      {/* DASHBOARD TAB */}
       {activeTab === 'dashboard' && (
         <div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '25px', marginBottom: '50px' }}>
@@ -208,9 +203,7 @@ function Admin() {
         </div>
       )}
 
-      {/* =========================================
-             TAB 2: EVENT MANAGER (ADD/EDIT) 
-          ========================================= */}
+      {/* MANAGER TAB */}
       {activeTab === 'manager' && (
         <div style={{ backgroundColor: editingId ? '#fff3e0' : '#fff', padding: '40px', borderRadius: '16px', boxShadow: '0 10px 30px rgba(0,0,0,0.06)', transition: 'background-color 0.3s' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px' }}>
@@ -245,8 +238,6 @@ function Admin() {
               <label style={labelStyle}>Description</label>
               <textarea value={description} placeholder="Describe the event details..." required style={{ ...inputStyle, height: '120px', resize: 'vertical' }} onChange={e => setDescription(e.target.value)}></textarea>
             </div>
-            
-            {/* --- NEW: Featured Checkbox --- */}
             <div style={{ gridColumn: '1 / -1', display: 'flex', alignItems: 'center', gap: '10px' }}>
               <input 
                 type="checkbox" 
@@ -257,7 +248,6 @@ function Admin() {
               />
               <label htmlFor="featured" style={{ ...labelStyle, marginBottom: 0, cursor: 'pointer' }}>🌟 Highlight as Featured Event</label>
             </div>
-
             <button type="submit" style={{...buttonStyle, backgroundColor: editingId ? '#d35400' : '#27ae60'}}>
               {editingId ? 'Save Changes' : 'Publish Event'}
             </button>
@@ -265,9 +255,7 @@ function Admin() {
         </div>
       )}
 
-      {/* =========================================
-             TAB 3: GUEST LIST
-          ========================================= */}
+      {/* GUEST LIST TAB */}
       {activeTab === 'guests' && (
         <div>
           <h3 style={{ color: '#2c3e50', fontSize: '1.5rem', fontWeight: '800', marginBottom: '20px' }}>Recent Bookings</h3>
@@ -303,9 +291,7 @@ function Admin() {
         </div>
       )}
 
-      {/* =========================================
-             TAB 4: SUGGESTIONS
-          ========================================= */}
+      {/* SUGGESTIONS TAB */}
       {activeTab === 'suggestions' && (
         <div>
           <h3 style={{ color: '#2c3e50', fontSize: '1.5rem', fontWeight: '800', marginBottom: '20px' }}>Community Suggestions</h3>
@@ -318,18 +304,21 @@ function Admin() {
               {suggestions.map(sugg => (
                 <div key={sugg._id} style={{ 
                   backgroundColor: '#fff', padding: '25px', borderRadius: '16px', 
-                  borderTop: `6px solid ${sugg.status === 'accepted' ? '#27ae60' : '#f1c40f'}`, 
+                  borderTop: `6px solid ${sugg.status === 'accepted' ? '#27ae60' : sugg.status === 'declined' ? '#e74c3c' : '#f1c40f'}`, 
                   boxShadow: '0 10px 30px rgba(0,0,0,0.06)',
                   display: 'flex', flexDirection: 'column'
                 }}>
                   <h4 style={{ margin: '0 0 10px 0', color: '#2c3e50', fontSize: '1.2rem', fontWeight: '800' }}>
                     {sugg.title} 
+                    {/* Visual Badges for Admin */}
                     {sugg.status === 'accepted' && <span style={{ marginLeft: '10px', fontSize: '11px', backgroundColor: '#e8f8f5', color: '#27ae60', padding: '4px 8px', borderRadius: '12px', verticalAlign: 'middle' }}>ACCEPTED</span>}
+                    {sugg.status === 'declined' && <span style={{ marginLeft: '10px', fontSize: '11px', backgroundColor: '#fdedec', color: '#e74c3c', padding: '4px 8px', borderRadius: '12px', verticalAlign: 'middle' }}>DECLINED</span>}
                   </h4>
                   <p style={{ fontSize: '13px', color: '#95a5a6', marginBottom: '15px' }}>Suggested by: <strong style={{ color: '#2c3e50' }}>{sugg.username}</strong></p>
                   <p style={{ color: '#555', fontSize: '15px', lineHeight: '1.5', flexGrow: 1, margin: '0 0 20px 0' }}>"{sugg.description}"</p>
 
-                  {sugg.status !== 'accepted' && (
+                  {/* Only show buttons if it is still Pending */}
+                  {sugg.status !== 'accepted' && sugg.status !== 'declined' && (
                     <div style={{ display: 'flex', gap: '10px' }}>
                       <button onClick={() => handleAcknowledge(sugg._id)} style={{ ...actionBtnStyle, backgroundColor: '#27ae60', flex: 1 }}>Accept & Draft</button>
                       <button onClick={() => handleDecline(sugg._id)} style={{ ...actionBtnStyle, backgroundColor: '#e74c3c', flex: 1 }}>Decline</button>
@@ -345,32 +334,9 @@ function Admin() {
   );
 }
 
-// --- MODERNIZED CSS STYLES ---
-const getTabStyle = (isActive) => ({
-  padding: '12px 24px',
-  backgroundColor: isActive ? '#2c3e50' : '#f8f9fa',
-  color: isActive ? 'white' : '#7f8c8d',
-  border: '1px solid',
-  borderColor: isActive ? '#2c3e50' : '#ecf0f1',
-  borderRadius: '30px',
-  cursor: 'pointer',
-  fontWeight: '700',
-  fontSize: '14px',
-  transition: 'all 0.2s ease',
-  whiteSpace: 'nowrap',
-  boxShadow: isActive ? '0 4px 10px rgba(44, 62, 80, 0.2)' : 'none'
-});
-
-const badgeStyle = {
-  backgroundColor: '#e74c3c',
-  color: 'white',
-  borderRadius: '12px',
-  padding: '2px 8px',
-  fontSize: '11px',
-  marginLeft: '8px',
-  fontWeight: '800'
-};
-
+// --- CSS STYLES ---
+const getTabStyle = (isActive) => ({ padding: '12px 24px', backgroundColor: isActive ? '#2c3e50' : '#f8f9fa', color: isActive ? 'white' : '#7f8c8d', border: '1px solid', borderColor: isActive ? '#2c3e50' : '#ecf0f1', borderRadius: '30px', cursor: 'pointer', fontWeight: '700', fontSize: '14px', transition: 'all 0.2s ease', whiteSpace: 'nowrap', boxShadow: isActive ? '0 4px 10px rgba(44, 62, 80, 0.2)' : 'none' });
+const badgeStyle = { backgroundColor: '#e74c3c', color: 'white', borderRadius: '12px', padding: '2px 8px', fontSize: '11px', marginLeft: '8px', fontWeight: '800' };
 const cardStyle = { backgroundColor: 'white', padding: '30px', borderRadius: '16px', boxShadow: '0 10px 30px rgba(0,0,0,0.06)', textAlign: 'center', transition: 'transform 0.2s ease' };
 const labelStyle = { display: 'block', marginBottom: '8px', fontSize: '13px', color: '#7f8c8d', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' };
 const inputStyle = { width: '100%', padding: '14px', borderRadius: '8px', border: '1px solid #e0e6ed', fontSize: '15px', backgroundColor: '#f8f9fa', transition: 'border 0.2s ease', outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit' };
