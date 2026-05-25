@@ -1,13 +1,13 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const axios = require('axios'); // Added for the HTTP Email API
 require('dotenv').config();
 
 const bcrypt = require('bcryptjs');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
-const nodemailer = require('nodemailer'); 
 
 // IMPORT MODELS
 const User = require('./models/User');
@@ -17,21 +17,36 @@ const Booking = require('./models/Booking');
 const app = express();
 const PORT = process.env.PORT || 5001;
 
-// --- EMAIL SETUP (THE TRANSPORTER) ---
-const transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
-  port: 587,
-  secure: false,
-  auth: {
-    user: 'cinnamoncotickets@gmail.com',
-    pass: 'euygaddmlozxpjzj'
-  }
-});
-
 const { OAuth2Client } = require('google-auth-library');
 const googleClient = new OAuth2Client("936864795704-0b0qod9dau9912l81prptrstcdllmlgf.apps.googleusercontent.com");
 
-// CORS & BODY PARSERS
+// ========================================================
+// 🔑 CENTRALIZED CLOUD-SAFE EMAIL HELPER (Resend API Wrapper)
+// ========================================================
+const sendCloudEmail = async ({ to, subject, html }) => {
+  // Free default key from Resend for testing onboarding links.
+  // Tip: You can also place this inside process.env.RESEND_API_KEY on the dashboard!
+  const RESEND_API_KEY = process.env.RESEND_API_KEY || "re_cAptqTAu_MJGVCkWWJ2YvHq8owKe5bNai"; 
+  
+  try {
+    await axios.post('https://api.resend.com/emails', {
+      from: 'Cinnamon & Co <onboarding@resend.dev>',
+      to: Array.isArray(to) ? to : [to], // Formats securely to arrays for API structure validation
+      subject: subject,
+      html: html
+    }, {
+      headers: {
+        'Authorization': `Bearer ${RESEND_API_KEY}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    console.log(`✅ Cloud HTTPS Email sent successfully to: ${to}`);
+  } catch (err) {
+    console.error("❌ Resend API Error Details:", err.response?.data || err.message);
+  }
+};
+
+// GLOBAL CORS CONFIGURATION (Dynamic for Local and Production URLs)
 app.use(cors({
   origin: function (origin, callback) {
     if (!origin || origin.includes('vercel.app') || origin.includes('localhost')) {
@@ -88,6 +103,7 @@ app.delete('/api/events/:id', async (req, res) => {
   } catch (err) { res.status(500).json({ message: "Error deleting event" }); }
 });
 
+// 1. REGISTER ROUTE (WITH CLOUD-SAFE EMAIL API HELPER)
 app.post('/api/register', async (req, res) => {
   try {
     const { username, email, password, adminCode } = req.body;
@@ -113,8 +129,11 @@ app.post('/api/register', async (req, res) => {
     });
     await newUser.save();
 
-    const mailOptions = {
-      from: "cinnamoncotickets@gmail.com",
+    // Instantly return response to stop client loader spinning indefinitely
+    res.status(201).json({ message: "Verification code sent to email!" });
+
+    // Execute email dispatch asynchronously in the background
+    sendCloudEmail({
       to: email,
       subject: 'Verify your Cinnamon & Co. Account',
       html: `
@@ -123,15 +142,9 @@ app.post('/api/register', async (req, res) => {
         <h1 style="font-size: 40px; letter-spacing: 5px; color: #d35400;">${verificationCode}</h1>
         <p>If you did not request this, please ignore this email.</p>
       `
-    };
+    });
 
-res.status(201).json({ message: "Verification code sent to email!" });
-
-    // 2. Fire the email in the background without making the user wait for it
-    transporter.sendMail(mailOptions)
-      .then(info => console.log("✅ Background Email sent perfectly: " + info.response))
-      .catch(emailError => console.error("❌ Background Email Error: ", emailError));
-      } catch (err) {
+  } catch (err) {
     console.error("REGISTER ERROR:", err);
     res.status(500).json({ message: "Error registering user" });
   }
@@ -159,7 +172,6 @@ app.post('/api/verify-email', async (req, res) => {
   }
 });
 
-// ✅ UNIFIED CLEAN LOGIN ROUTE WITH VERIFICATION CHECK
 app.post('/api/login', async (req, res) => {
   try {
     const loginString = req.body.identifier || req.body.email;
@@ -187,7 +199,6 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
-// ✅ FIXED GOOGLE LOGIN WITH AUTOMATIC ISVERIFIED ASSIGNMENT
 app.post('/api/google-login', async (req, res) => {
   try {
     const { token } = req.body;
@@ -219,6 +230,7 @@ app.post('/api/google-login', async (req, res) => {
   }
 });
 
+// 2. BOOKINGS ROUTE (WITH CLOUD-SAFE EMAIL API HELPER)
 app.post('/api/bookings', async (req, res) => {
   try {
     const { userId, eventId, quantity } = req.body;
@@ -240,8 +252,10 @@ app.post('/api/bookings', async (req, res) => {
     event.soldTickets = ticketsSold + Number(quantity);
     await event.save();
     
-    const mailOptions = {
-      from: process.env.EMAIL_USER || 'cinnamoncotickets@gmail.com',
+    res.status(201).json({ message: "🎉 Booking Confirmed! A receipt has been sent to your email." });
+
+    // Send the purchase confirmation receipt over safe HTTP connections in background
+    sendCloudEmail({
       to: user.email,
       subject: `🎟️ Tickets Confirmed: ${event.title}`,
       html: `
@@ -258,17 +272,8 @@ app.post('/api/bookings', async (req, res) => {
           <p style="margin-top: 30px; font-size: 14px; color: #777;">We look forward to seeing you!<br/>- The Cinnamon & Co. Team</p>
         </div>
       `
-    };
+    });
 
-    console.log(`⏳ Attempting to send email to: ${user.email}...`);
-    try {
-      const info = await transporter.sendMail(mailOptions);
-      console.log("✅ Email sent perfectly: " + info.response);
-    } catch (emailError) {
-      console.log("❌ Email Error: ", emailError);
-    }
-
-    res.status(201).json({ message: "🎉 Booking Confirmed! A receipt has been sent to your email." });
   } catch (err) { 
     console.error(err);
     res.status(500).json({ message: "Error processing booking" }); 
@@ -338,6 +343,7 @@ app.get('/api/admin/suggestions', async (req, res) => {
   catch (err) { res.status(500).json({ message: "Error fetching suggestions" }); }
 });
 
+// 3. SUGGESTIONS ROUTE (WITH CLOUD-SAFE EMAIL API HELPER)
 app.patch('/api/suggestions/:id', async (req, res) => {
   try {
     const updatedSuggestion = await Suggestion.findByIdAndUpdate(
@@ -346,9 +352,10 @@ app.patch('/api/suggestions/:id', async (req, res) => {
       { new: true } 
     );
     
+    res.json({ message: "Suggestion status updated" });
+
     if (updatedSuggestion.email && req.body.status === 'accepted') {
-      const mailOptions = {
-        from: 'cinnamoncotickets@gmail.com',
+      sendCloudEmail({
         to: updatedSuggestion.email,
         subject: `🎉 Your Event Idea was Accepted!`,
         html: `
@@ -359,11 +366,9 @@ app.patch('/api/suggestions/:id', async (req, res) => {
             <p style="margin-top: 30px; font-size: 14px; color: #777;">Thanks for being an awesome part of our community!<br/>- The Cinnamon & Co. Team</p>
           </div>
         `
-      };
-      transporter.sendMail(mailOptions).catch(err => console.log("❌ Suggestion Email Error:", err));
+      });
     }
 
-    res.json({ message: "Suggestion status updated" });
   } catch (err) { 
     res.status(500).json({ message: "Error updating suggestion" }); 
   }
@@ -390,6 +395,7 @@ app.put('/api/events/:id', upload.single('image'), async (req, res) => {
   }
 });
 
+// 4. PROFILE UPDATE ROUTE (WITH CLOUD-SAFE EMAIL API HELPER)
 app.put('/api/users/:id', async (req, res) => {
   try {
     const { username, email, password } = req.body;
@@ -406,8 +412,7 @@ app.put('/api/users/:id', async (req, res) => {
       user.isVerified = false;
       user.verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
       
-      const mailOptions = {
-        from: process.env.EMAIL_USER,
+      sendCloudEmail({
         to: email,
         subject: 'Verify your new email for Cinnamon & Co.',
         html: `
@@ -416,8 +421,7 @@ app.put('/api/users/:id', async (req, res) => {
           <h1 style="font-size: 40px; letter-spacing: 5px; color: #d35400;">${user.verificationCode}</h1>
           <p>If you did not make this change, please contact support immediately.</p>
         `
-      };
-      await transporter.sendMail(mailOptions);
+      });
     }
 
     user.username = username;
@@ -443,6 +447,7 @@ app.put('/api/users/:id', async (req, res) => {
   }
 });
 
+// 5. FORGOT PASSWORD ROUTE (WITH CLOUD-SAFE EMAIL API HELPER)
 app.post('/api/forgot-password', async (req, res) => {
   try {
     const { email } = req.body;
@@ -456,8 +461,9 @@ app.post('/api/forgot-password', async (req, res) => {
     user.resetCodeExpires = Date.now() + 15 * 60 * 1000; 
     await user.save();
 
-    const mailOptions = {
-      from: 'cinnamoncotickets@gmail.com',
+    res.json({ message: "Reset code sent to your email!" });
+
+    sendCloudEmail({
       to: user.email,
       subject: `🔒 Password Reset Code: ${resetCode}`,
       html: `
@@ -468,10 +474,8 @@ app.post('/api/forgot-password', async (req, res) => {
           <p style="color: #e74c3c; font-size: 12px;">This code will expire in 15 minutes. If you didn't request this, ignore this email.</p>
         </div>
       `
-    };
-    
-    transporter.sendMail(mailOptions).catch(err => console.log("Email error:", err));
-    res.json({ message: "Reset code sent to your email!" });
+    });
+
   } catch (err) {
     res.status(500).json({ message: "Error sending reset code." });
   }
