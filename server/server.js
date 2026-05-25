@@ -88,7 +88,10 @@ app.get('/api/events', async (req, res) => {
 
 app.post('/api/events', upload.single('image'), async (req, res) => {
   try {
-    const baseUrl = process.env.BACKEND_URL || `http://localhost:${PORT}`;
+    // 🔥 DYNAMICALLY DETECT IF LOCAL OR LIVE URL:
+    const protocol = req.headers['x-forwarded-proto'] || req.protocol;
+    const baseUrl = `${protocol}://${req.get('host')}`;
+    
     const imagePath = req.file ? `${baseUrl}/uploads/${req.file.filename}` : req.body.image;
     const newEvent = new Event({ ...req.body, image: imagePath || 'https://via.placeholder.com/300' });
     await newEvent.save();
@@ -385,7 +388,9 @@ app.put('/api/events/:id', upload.single('image'), async (req, res) => {
   try {
     const updateData = { ...req.body };
     if (req.file) {
-      const baseUrl = process.env.BACKEND_URL || `http://localhost:${PORT}`;
+      // 🔥 DYNAMICALLY DETECT IF LOCAL OR LIVE URL:
+      const protocol = req.headers['x-forwarded-proto'] || req.protocol;
+      const baseUrl = `${protocol}://${req.get('host')}`;
       updateData.image = `${baseUrl}/uploads/${req.file.filename}`;
     }
     const updatedEvent = await Event.findByIdAndUpdate(req.params.id, updateData, { new: true });
