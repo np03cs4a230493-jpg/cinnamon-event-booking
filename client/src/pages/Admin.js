@@ -3,6 +3,7 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
+//Admin Page 
 function Admin() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -19,9 +20,10 @@ function Admin() {
   const [description, setDescription] = useState('');
   const [totalTickets, setTotalTickets] = useState('');
   const [file, setFile] = useState(null);
+  const [imageUrl, setImageUrl] = useState(''); // 🆕 Added for text input image URLs
   const [isFeatured, setIsFeatured] = useState(false);
 
-  // --- NEW: Custom Modal State ---
+  // Custom Modal State
   const [deleteModal, setDeleteModal] = useState({ isOpen: false, type: '', id: null, itemName: '' });
 
   useEffect(() => {
@@ -60,6 +62,7 @@ function Admin() {
       setDescription(eventToEdit.description);
       setEditingId(eventToEdit._id);
       setIsFeatured(eventToEdit.isFeatured || false);
+      setImageUrl(eventToEdit.image || ''); // 🆕 Populates link input box on edit click
 
       const d = new Date(eventToEdit.date);
       const formattedDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -72,6 +75,7 @@ function Admin() {
   const handleCancelEdit = () => {
     setEditingId(null);
     setTitle(''); setDate(''); setPrice(''); setTotalTickets(''); setDescription(''); setFile(null);
+    setImageUrl(''); // 🆕 Resets URL value string
     setIsFeatured(false);
     setActiveTab('dashboard'); 
   };
@@ -85,7 +89,13 @@ function Admin() {
     formData.append('description', description);
     formData.append('totalTickets', totalTickets);
     formData.append('isFeatured', isFeatured); 
-    if (file) formData.append('image', file);
+    
+    // 🆕 Priority fallback system: if file binary exists use it, else send string text URL
+    if (file) {
+      formData.append('image', file);
+    } else if (imageUrl) {
+      formData.append('image', imageUrl);
+    }
 
     try {
       if (editingId) {
@@ -117,7 +127,6 @@ function Admin() {
     }
   };
 
-  // --- NEW: Universal Confirm Function for the Modal ---
   const confirmAction = async () => {
     if (deleteModal.type === 'event') {
       try {
@@ -140,7 +149,6 @@ function Admin() {
         toast.error("Error declining suggestion"); 
       }
     }
-    // Close modal after action
     setDeleteModal({ isOpen: false, type: '', id: null, itemName: '' });
   };
 
@@ -149,13 +157,11 @@ function Admin() {
   return (
     <div style={{ padding: '40px 20px', maxWidth: '1200px', margin: '0 auto', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
       
-      {/* --- NEW: CUSTOM SWEET-ALERT STYLE MODAL --- */}
-   {/* --- FIX: ISOLATED CUSTOM SWEET-ALERT STYLE MODAL (OUTSIDE OF FORMS) --- */}
+      {/* ISOLATED CUSTOM SWEET-ALERT STYLE MODAL */}
       {deleteModal.isOpen && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.4)', zIndex: 9999, display: 'flex', justifyContent: 'center', alignItems: 'center', backdropFilter: 'blur(3px)' }}>
           <div style={{ backgroundColor: 'white', padding: '40px 30px', borderRadius: '8px', textAlign: 'center', maxWidth: '450px', width: '90%', boxShadow: '0 4px 20px rgba(0,0,0,0.15)', animation: 'popIn 0.3s ease' }}>
             
-            {/* Warning Icon */}
             <div style={{ width: '80px', height: '80px', border: '4px solid #f8bb86', borderRadius: '50%', display: 'flex', justifyContent: 'center', alignItems: 'center', margin: '0 auto 20px auto' }}>
               <span style={{ color: '#f8bb86', fontSize: '50px', fontWeight: '300', lineHeight: '1' }}>!</span>
             </div>
@@ -167,7 +173,7 @@ function Admin() {
             
             <div style={{ display: 'flex', justifyContent: 'center', gap: '15px' }}>
               <button 
-                type="button" /* <--- CRITICAL FIX: Stops form submission */
+                type="button" 
                 onClick={() => setDeleteModal({ isOpen: false, type: '', id: null, itemName: '' })} 
                 style={{ padding: '12px 20px', backgroundColor: '#c1c1c1', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '15px', fontWeight: '600', transition: 'background 0.2s' }}
                 onMouseOver={e => e.target.style.backgroundColor = '#b0b0b0'}
@@ -176,7 +182,7 @@ function Admin() {
                 Cancel
               </button>
               <button 
-                type="button" /* <--- CRITICAL FIX: Stops form submission */
+                type="button" 
                 onClick={confirmAction} 
                 style={{ padding: '12px 20px', backgroundColor: '#dd6b55', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '15px', fontWeight: '600', transition: 'background 0.2s', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}
                 onMouseOver={e => e.target.style.backgroundColor = '#c85e4b'}
@@ -188,7 +194,6 @@ function Admin() {
           </div>
         </div>
       )}
-      {/* ------------------------------------------- */}
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '30px' }}>
         <h1 style={{ color: '#2c3e50', fontSize: '2.8rem', margin: 0, fontWeight: '800', letterSpacing: '-0.5px' }}>Admin Dashboard</h1>
@@ -196,14 +201,14 @@ function Admin() {
 
       <div style={{ display: 'flex', gap: '15px', marginBottom: '40px', paddingBottom: '15px', overflowX: 'auto', borderBottom: '2px solid #ecf0f1' }}>
         <button onClick={() => setActiveTab('dashboard')} style={getTabStyle(activeTab === 'dashboard')}>📊 Overview</button>
-        <button onClick={() => setActiveTab('manager')} style={getTabStyle(activeTab === 'manager')}>🛠️ Event Manager</button>
-        <button onClick={() => setActiveTab('guests')} style={getTabStyle(activeTab === 'guests')}>📝 Guest List</button>
+        <button onClick={() => setActiveTab('manager')} style={getTabStyle(activeTab === 'manager')}>🛠 Event Manager</button>
+        <button onClick={() => setActiveTab('guests')} style={getTabStyle(activeTab === 'guests')}>👥 Guest List</button>
         <button onClick={() => setActiveTab('suggestions')} style={getTabStyle(activeTab === 'suggestions')}>
           💡 Suggestions {pendingSuggestionsCount > 0 && <span style={badgeStyle}>{pendingSuggestionsCount}</span>}
         </button>
       </div>
 
-      {/* DASHBOARD TAB */}
+      {/* OVERVIEW TAB */}
       {activeTab === 'dashboard' && (
         <div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '25px', marginBottom: '50px' }}>
@@ -252,7 +257,6 @@ function Admin() {
                        <button onClick={() => handleEditClick(stat._id)} style={{ color: '#3498db', background: '#e8f4f8', padding: '6px 12px', borderRadius: '6px', border: 'none', cursor: 'pointer', fontWeight: '700', fontSize: '13px', marginRight: '8px' }}>
                          Edit
                        </button>
-                       {/* TRIGGER CUSTOM MODAL ON DELETE CLICK */}
                        <button onClick={() => setDeleteModal({ isOpen: true, type: 'event', id: stat._id, itemName: stat.title })} style={{ color: '#e74c3c', background: '#fdedec', padding: '6px 12px', borderRadius: '6px', border: 'none', cursor: 'pointer', fontWeight: '700', fontSize: '13px' }}>
                          Delete
                        </button>
@@ -265,7 +269,7 @@ function Admin() {
         </div>
       )}
 
-      {/* MANAGER TAB */}
+      {/* EVENT MANAGER TAB */}
       {activeTab === 'manager' && (
         <div style={{ backgroundColor: editingId ? '#fff3e0' : '#fff', padding: '40px', borderRadius: '16px', boxShadow: '0 10px 30px rgba(0,0,0,0.06)', transition: 'background-color 0.3s' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px' }}>
@@ -285,10 +289,6 @@ function Admin() {
               <input type="date" value={date} required style={inputStyle} onChange={e => setDate(e.target.value)} />
             </div>
             <div>
-               <label style={labelStyle}>{editingId ? 'Update Image (Optional)' : 'Event Image'}</label>
-               <input type="file" accept="image/*" style={{ ...inputStyle, padding: '11px' }} onChange={e => setFile(e.target.files[0])} />
-            </div>
-            <div>
               <label style={labelStyle}>Price (NPR)</label>
               <input type="number" value={price} placeholder="500" required style={inputStyle} onChange={e => setPrice(e.target.value)} />
             </div>
@@ -296,6 +296,23 @@ function Admin() {
               <label style={labelStyle}>Total Tickets</label>
               <input type="number" value={totalTickets} placeholder="50" required style={inputStyle} onChange={e => setTotalTickets(e.target.value)} />
             </div>
+            <div>
+               <label style={labelStyle}>{editingId ? 'Upload New Image File (Optional Override)' : 'Upload Image File'}</label>
+               <input type="file" accept="image/*" style={{ ...inputStyle, padding: '11px' }} onChange={e => setFile(e.target.files[0])} />
+            </div>
+            
+            {/* 🆕 NEW COMPONENT ROW: Permanent Text input fallback backup field */}
+            <div style={{ gridColumn: '1 / -1' }}>
+              <label style={labelStyle}>Or Paste Image URL (Best for Live Production)</label>
+              <input 
+                type="text" 
+                value={imageUrl} 
+                placeholder="https://images.unsplash.com/photo-..." 
+                style={inputStyle} 
+                onChange={e => setImageUrl(e.target.value)} 
+              />
+            </div>
+
             <div style={{ gridColumn: '1 / -1' }}>
               <label style={labelStyle}>Description</label>
               <textarea value={description} placeholder="Describe the event details..." required style={{ ...inputStyle, height: '120px', resize: 'vertical' }} onChange={e => setDescription(e.target.value)}></textarea>
@@ -305,7 +322,7 @@ function Admin() {
                 type="checkbox" id="featured" checked={isFeatured} onChange={(e) => setIsFeatured(e.target.checked)} 
                 style={{ width: '20px', height: '20px', cursor: 'pointer' }}
               />
-              <label htmlFor="featured" style={{ ...labelStyle, marginBottom: 0, cursor: 'pointer' }}>🌟 Highlight as Featured Event</label>
+              <label htmlFor="featured" style={{ ...labelStyle, marginBottom: 0, cursor: 'pointer' }}>⭐ Highlight as Featured Event</label>
             </div>
             <button type="submit" style={{...buttonStyle, backgroundColor: editingId ? '#d35400' : '#27ae60'}}>
               {editingId ? 'Save Changes' : 'Publish Event'}
@@ -373,9 +390,8 @@ function Admin() {
                     {sugg.status === 'declined' && <span style={{ marginLeft: '10px', fontSize: '11px', backgroundColor: '#fdedec', color: '#e74c3c', padding: '4px 8px', borderRadius: '12px', verticalAlign: 'middle' }}>DECLINED</span>}
                   </h4>
                   <p style={{ fontSize: '13px', color: '#95a5a6', marginBottom: '15px' }}>Suggested by: <strong style={{ color: '#2c3e50' }}>{sugg.username}</strong></p>
-                  <p style={{ color: '#555', fontSize: '15px', lineHeight: '1.5', flexGrow: 1, margin: '0 0 20px 0' }}>"{sugg.description}"</p>
+                  <p style={{ color: '#555', fontSize: '15px', lineHeight: '1.6', flexGrow: 1, margin: '0 0 20px 0' }}>"{sugg.description}"</p>
 
-                  {/* UPDATE: Use custom modal instead of window.confirm */}
                   {sugg.status !== 'accepted' && sugg.status !== 'declined' && (
                     <div style={{ display: 'flex', gap: '10px' }}>
                       <button onClick={() => handleAcknowledge(sugg._id)} style={{ ...actionBtnStyle, backgroundColor: '#27ae60', flex: 1 }}>Accept & Draft</button>
@@ -392,7 +408,6 @@ function Admin() {
   );
 }
 
-// --- CSS STYLES ---
 const getTabStyle = (isActive) => ({ padding: '12px 24px', backgroundColor: isActive ? '#2c3e50' : '#f8f9fa', color: isActive ? 'white' : '#7f8c8d', border: '1px solid', borderColor: isActive ? '#2c3e50' : '#ecf0f1', borderRadius: '30px', cursor: 'pointer', fontWeight: '700', fontSize: '14px', transition: 'all 0.2s ease', whiteSpace: 'nowrap', boxShadow: isActive ? '0 4px 10px rgba(44, 62, 80, 0.2)' : 'none' });
 const badgeStyle = { backgroundColor: '#e74c3c', color: 'white', borderRadius: '12px', padding: '2px 8px', fontSize: '11px', marginLeft: '8px', fontWeight: '800' };
 const cardStyle = { backgroundColor: 'white', padding: '30px', borderRadius: '16px', boxShadow: '0 10px 30px rgba(0,0,0,0.06)', textAlign: 'center', transition: 'transform 0.2s ease' };
@@ -403,7 +418,6 @@ const thStyle = { padding: '20px', borderBottom: '2px solid #f1f2f6', color: '#9
 const tdStyle = { padding: '20px', color: '#2c3e50', fontSize: '15px' };
 const actionBtnStyle = { color: 'white', border: 'none', padding: '10px', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: '700', transition: 'opacity 0.2s ease' };
 
-// Optional: Add a simple CSS animation for the pop-in effect
 const styleSheet = document.createElement("style");
 styleSheet.innerText = `@keyframes popIn { 0% { opacity: 0; transform: scale(0.8); } 100% { opacity: 1; transform: scale(1); } }`;
 document.head.appendChild(styleSheet);
