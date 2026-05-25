@@ -20,8 +20,8 @@ const PORT = process.env.PORT || 5001;
 // --- EMAIL SETUP (THE TRANSPORTER) ---
 const transporter = nodemailer.createTransport({
   host: 'smtp.gmail.com',
-  port: 465,
-  secure: true,
+  port: 587,
+  secure: false,
   auth: {
     user: 'cinnamoncotickets@gmail.com',
     pass: 'euygaddmlozxpjzj'
@@ -114,7 +114,7 @@ app.post('/api/register', async (req, res) => {
     await newUser.save();
 
     const mailOptions = {
-      from: process.env.EMAIL_USER,
+      from: "cinnamoncotickets@gmail.com",
       to: email,
       subject: 'Verify your Cinnamon & Co. Account',
       html: `
