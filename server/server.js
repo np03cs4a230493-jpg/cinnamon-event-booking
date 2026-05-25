@@ -125,9 +125,13 @@ app.post('/api/register', async (req, res) => {
       `
     };
 
-    await transporter.sendMail(mailOptions);
-    res.status(201).json({ message: "Verification code sent to email!" });
-  } catch (err) {
+res.status(201).json({ message: "Verification code sent to email!" });
+
+    // 2. Fire the email in the background without making the user wait for it
+    transporter.sendMail(mailOptions)
+      .then(info => console.log("✅ Background Email sent perfectly: " + info.response))
+      .catch(emailError => console.error("❌ Background Email Error: ", emailError));
+      } catch (err) {
     console.error("REGISTER ERROR:", err);
     res.status(500).json({ message: "Error registering user" });
   }
