@@ -36,7 +36,7 @@ function EventDetails() {
     const finalQuantity = quantity || 1;
 
     try {
-      const res = await axios.post('/api/bookings', {
+       await axios.post('/api/bookings', {
         userId: user._id, 
         eventId: event._id,
         quantity: finalQuantity 
