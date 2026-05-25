@@ -31,13 +31,20 @@ const transporter = nodemailer.createTransport({
 const { OAuth2Client } = require('google-auth-library');
 const googleClient = new OAuth2Client("936864795704-0b0qod9dau9912l81prptrstcdllmlgf.apps.googleusercontent.com"); // <-- We will paste it here later!
 
-// MIDDLEWARE
+// ✅ REPLACE your old app.use(cors(...)) with this dynamic production version:
 app.use(cors({
-  origin: process.env.FRONTEND_URL || "http://localhost:3000", 
-  methods: ["GET", "POST", "PUT", "PATCH", "DELETE"], 
-  credentials: true
+  origin: function (origin, callback) {
+    // Allow local testing or any Vercel deployment link
+    if (!origin || origin.includes('vercel.app') || origin.includes('localhost')) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
-app.use(express.json());
 
 // DATABASE CONNECTION
 mongoose.connect(process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/cinnamon_db')
