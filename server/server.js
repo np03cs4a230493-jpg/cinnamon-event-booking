@@ -23,18 +23,17 @@ const transporter = nodemailer.createTransport({
   port: 465,
   secure: true,
   auth: {
-    user: 'cinnamoncotickets@gmail.com',         // <--- PUT YOUR GMAIL HERE
-    pass: 'euygaddmlozxpjzj'   // <--- PUT YOUR GOOGLE APP PASSWORD HERE (no spaces)
+    user: 'cinnamoncotickets@gmail.com',
+    pass: 'euygaddmlozxpjzj'
   }
 });
 
 const { OAuth2Client } = require('google-auth-library');
-const googleClient = new OAuth2Client("936864795704-0b0qod9dau9912l81prptrstcdllmlgf.apps.googleusercontent.com"); // <-- We will paste it here later!
+const googleClient = new OAuth2Client("936864795704-0b0qod9dau9912l81prptrstcdllmlgf.apps.googleusercontent.com");
 
-// ✅ REPLACE your old app.use(cors(...)) with this dynamic production version:
+// CORS & BODY PARSERS
 app.use(cors({
   origin: function (origin, callback) {
-    // Allow local testing or any Vercel deployment link
     if (!origin || origin.includes('vercel.app') || origin.includes('localhost')) {
       callback(null, true);
     } else {
@@ -67,7 +66,6 @@ app.use('/uploads', express.static('uploads'));
 
 app.get('/api/events', async (req, res) => {
   try {
-    // -1 means "Descending" (Highest number first)
     const events = await Event.find().sort({ soldTickets: -1, date: 1 });
     res.json(events);
   } catch (err) { res.status(500).json({ message: err.message }); }
@@ -90,24 +88,17 @@ app.delete('/api/events/:id', async (req, res) => {
   } catch (err) { res.status(500).json({ message: "Error deleting event" }); }
 });
 
-// --- UPDATED: REGISTER ROUTE (NOW SENDS OTP) ---
-// --- REGISTER ROUTE WITH STRICT "Lemonade" ADMIN CHECK ---
 app.post('/api/register', async (req, res) => {
   try {
     const { username, email, password, adminCode } = req.body;
 
-    // Check if user already exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(400).json({ message: "User already exists with this email." });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    
-    // --- HERE IS YOUR SECRET KEY CHECK! ---
     const role = adminCode === 'Lemonade' ? 'admin' : 'user'; 
-    
-    // Generate a 6-digit OTP
     const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
 
     console.log(`\n☕ [DEVELOPER TESTING] New Signup OTP for ${email} is: ${verificationCode}\n`);
@@ -122,7 +113,6 @@ app.post('/api/register', async (req, res) => {
     });
     await newUser.save();
 
-    // Send the verification email
     const mailOptions = {
       from: process.env.EMAIL_USER,
       to: email,
@@ -136,7 +126,6 @@ app.post('/api/register', async (req, res) => {
     };
 
     await transporter.sendMail(mailOptions);
-
     res.status(201).json({ message: "Verification code sent to email!" });
   } catch (err) {
     console.error("REGISTER ERROR:", err);
@@ -144,7 +133,6 @@ app.post('/api/register', async (req, res) => {
   }
 });
 
-// UPDATED: VERIFY EMAIL ROUTE (NOW RETURNS THE USER OBJECT)
 app.post('/api/verify-email', async (req, res) => {
   try {
     const { email, code } = req.body;
@@ -158,7 +146,6 @@ app.post('/api/verify-email', async (req, res) => {
     user.verificationCode = undefined;
     await user.save();
 
-    // Send back user data so the frontend can auto-login/update state
     res.json({ 
       message: "Email verified successfully!",
       user: { _id: user._id, username: user.username, email: user.email, role: user.role }
@@ -168,17 +155,21 @@ app.post('/api/verify-email', async (req, res) => {
   }
 });
 
-// 3. UPDATED: LOGIN ROUTE (RETURNS UNVERIFIED EMAIL)
+// ✅ UNIFIED CLEAN LOGIN ROUTE WITH VERIFICATION CHECK
 app.post('/api/login', async (req, res) => {
   try {
-    const { identifier, password } = req.body;
-    const user = await User.findOne({
-      $or: [{ email: identifier }, { username: identifier }]
+    const loginString = req.body.identifier || req.body.email;
+    const password = req.body.password;
+    
+    const user = await User.findOne({ 
+      $or: [
+        { email: loginString }, 
+        { username: loginString }
+      ] 
     });
-
+    
     if (!user) return res.status(400).json({ message: "Invalid credentials" });
 
-    // Block login if unverified, BUT return the email so the frontend knows where to send the code!
     if (!user.isVerified) {
       return res.status(403).json({ message: "Please verify your email address first!", email: user.email });
     }
@@ -187,66 +178,36 @@ app.post('/api/login', async (req, res) => {
     if (!isMatch) return res.status(400).json({ message: "Invalid credentials" });
 
     res.json({ _id: user._id, username: user.username, email: user.email, role: user.role });
-  } catch (err) {
-    res.status(500).json({ message: "Server error" });
-  }
-});
-
-app.post('/api/login', async (req, res) => {
-  try {
-    // 1. Grab whatever they typed (whether React called it 'email' or 'identifier')
-    const loginString = req.body.identifier || req.body.email;
-    const password = req.body.password;
-    
-    // 2. SMART SEARCH: Check if that string matches an email OR a username
-    const user = await User.findOne({ 
-      $or: [
-        { email: loginString }, 
-        { username: loginString }
-      ] 
-    });
-    
-    if (!user) return res.status(400).json({ message: "User not found" });
-
-    // 3. Verify the password
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) return res.status(400).json({ message: "Invalid credentials" });
-
-    res.json({ message: "Login Successful!", username: user.username, email: user.email, _id: user._id, role: user.role });
   } catch (err) { 
     res.status(500).json({ message: "Server error" }); 
   }
 });
 
+// ✅ FIXED GOOGLE LOGIN WITH AUTOMATIC ISVERIFIED ASSIGNMENT
 app.post('/api/google-login', async (req, res) => {
   try {
     const { token } = req.body;
     
-    // 1. Verify the token with Google
     const ticket = await googleClient.verifyIdToken({
       idToken: token,
-      audience: "936864795704-0b0qod9dau9912l81prptrstcdllmlgf.apps.googleusercontent.com" // <-- And paste it here later!
+      audience: "936864795704-0b0qod9dau9912l81prptrstcdllmlgf.apps.googleusercontent.com"
     });
     
     const { name, email } = ticket.getPayload();
-
-    // 2. Check if user already exists in our database
     let user = await User.findOne({ email });
 
-    // 3. If they don't exist, create a new account for them automatically!
     if (!user) {
-      // Generate a random password since our DB requires one
       const randomPassword = await bcrypt.hash(Math.random().toString(36).slice(-8), 10);
       user = new User({
         username: name,
         email: email,
         password: randomPassword,
-        role: 'user'
+        role: 'user',
+        isVerified: true
       });
       await user.save();
     }
 
-    // 4. Send back the user data just like a normal login
     res.json({ message: "Google Login Successful!", username: user.username, email: user.email, _id: user._id, role: user.role });
   } catch (err) {
     console.error("Google Auth Error:", err);
@@ -254,7 +215,6 @@ app.post('/api/google-login', async (req, res) => {
   }
 });
 
-// BOOKINGS: CREATE BOOKING & SEND EMAIL
 app.post('/api/bookings', async (req, res) => {
   try {
     const { userId, eventId, quantity } = req.body;
@@ -276,7 +236,6 @@ app.post('/api/bookings', async (req, res) => {
     event.soldTickets = ticketsSold + Number(quantity);
     await event.save();
     
-    // --- SEND THE EMAIL RECEIPT ---
     const mailOptions = {
       from: process.env.EMAIL_USER || 'cinnamoncotickets@gmail.com',
       to: user.email,
@@ -285,7 +244,6 @@ app.post('/api/bookings', async (req, res) => {
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
           <h2 style="color: #2c3e50;">Hi ${user.username},</h2>
           <p style="font-size: 16px; color: #555;">Thank you for your booking! Here are your ticket details for your upcoming event at Cinnamon & Co.</p>
-          
           <div style="background-color: #fff3e0; padding: 20px; border-left: 5px solid #d35400; border-radius: 5px; margin-top: 20px;">
             <h3 style="color: #d35400; margin-top: 0;">${event.title}</h3>
             <p style="margin: 5px 0;"><strong>Date:</strong> ${new Date(event.date).toLocaleDateString()}</p>
@@ -293,13 +251,11 @@ app.post('/api/bookings', async (req, res) => {
             <p style="margin: 5px 0;"><strong>Total Paid:</strong> NPR ${event.price * quantity}</p>
             <p style="margin: 5px 0; font-size: 12px; color: #888;"><strong>Booking ID:</strong> ${newBooking._id}</p>
           </div>
-          
           <p style="margin-top: 30px; font-size: 14px; color: #777;">We look forward to seeing you!<br/>- The Cinnamon & Co. Team</p>
         </div>
       `
     };
 
-    // Force the server to tell us what happens with the email!
     console.log(`⏳ Attempting to send email to: ${user.email}...`);
     try {
       const info = await transporter.sendMail(mailOptions);
@@ -330,7 +286,7 @@ app.get('/api/admin/analytics', async (req, res) => {
       const revenue = sold * event.price;
       const left = event.totalTickets - sold;
       return {
-        _id: event._id, // <--- NEW: Send the ID to the frontend!
+        _id: event._id,
         title: event.title, total: event.totalTickets, sold, left, revenue,
         percent: event.totalTickets > 0 ? (sold / event.totalTickets) * 100 : 0
       };
@@ -343,14 +299,12 @@ app.get('/api/admin/analytics', async (req, res) => {
   } catch (err) { res.status(500).json({ message: "Error fetching analytics" }); }
 });
 
-// --- NEW: FETCH ALL BOOKINGS FOR ADMIN ---
 app.get('/api/admin/bookings', async (req, res) => {
   try {
-    // .populate() pulls in the actual user and event data instead of just their IDs!
     const bookings = await Booking.find()
       .populate('user', 'username email') 
       .populate('event', 'title date')
-      .sort({ bookingDate: -1 }); // Sort by newest first
+      .sort({ bookingDate: -1 });
       
     res.json(bookings);
   } catch (err) { 
@@ -360,7 +314,7 @@ app.get('/api/admin/bookings', async (req, res) => {
 
 const SuggestionSchema = new mongoose.Schema({
   username: String, 
-  email: String, // <--- NEW: Add email to the schema
+  email: String,
   title: { type: String, required: true }, 
   description: { type: String, required: true },
   status: { type: String, default: 'pending' }, 
@@ -382,18 +336,15 @@ app.get('/api/admin/suggestions', async (req, res) => {
 
 app.patch('/api/suggestions/:id', async (req, res) => {
   try {
-    // 1. Update the suggestion in the database and grab the updated data ({ new: true })
     const updatedSuggestion = await Suggestion.findByIdAndUpdate(
       req.params.id, 
       { status: req.body.status || 'accepted' }, 
       { new: true } 
     );
     
-    // 2. --- NEW: SEND CONGRATS EMAIL ---
-    // Only send the email if they provided one (aren't anonymous) AND the status is actually 'accepted'
     if (updatedSuggestion.email && req.body.status === 'accepted') {
       const mailOptions = {
-        from: 'cinnamoncotickets@gmail.com', // <--- Make sure this matches your transporter email at the top of server.js!
+        from: 'cinnamoncotickets@gmail.com',
         to: updatedSuggestion.email,
         subject: `🎉 Your Event Idea was Accepted!`,
         html: `
@@ -405,8 +356,6 @@ app.patch('/api/suggestions/:id', async (req, res) => {
           </div>
         `
       };
-
-      // Send it in the background!
       transporter.sendMail(mailOptions).catch(err => console.log("❌ Suggestion Email Error:", err));
     }
 
@@ -423,20 +372,13 @@ app.delete('/api/suggestions/:id', async (req, res) => {
   } catch (err) { res.status(500).json({ message: "Error deleting suggestion" }); }
 });
 
-app.listen(PORT, () => console.log(`🚀 Server is running on http://localhost:${PORT}`));
-
-// --- NEW: EDIT EVENT ROUTE ---
-// --- UPDATED EDIT EVENT ROUTE ---
 app.put('/api/events/:id', upload.single('image'), async (req, res) => {
   try {
     const updateData = { ...req.body };
-    
     if (req.file) {
-      // FIX: Dynamically prepend the base URL so images render across different hosting domains!
       const baseUrl = process.env.BACKEND_URL || `http://localhost:${PORT}`;
       updateData.image = `${baseUrl}/uploads/${req.file.filename}`;
     }
-
     const updatedEvent = await Event.findByIdAndUpdate(req.params.id, updateData, { new: true });
     res.json(updatedEvent);
   } catch (err) { 
@@ -444,8 +386,6 @@ app.put('/api/events/:id', upload.single('image'), async (req, res) => {
   }
 });
 
--
-// UPDATED: PROFILE UPDATE ROUTE
 app.put('/api/users/:id', async (req, res) => {
   try {
     const { username, email, password } = req.body;
@@ -455,17 +395,13 @@ app.put('/api/users/:id', async (req, res) => {
     const emailChanged = email !== user.email;
 
     if (emailChanged) {
-      // Check if the NEW email is already taken by someone else
       const emailTaken = await User.findOne({ email });
       if (emailTaken) {
         return res.status(400).json({ message: "That email is already in use by another account." });
       }
-      
-      // Revoke verification and generate new code
       user.isVerified = false;
       user.verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
       
-      // Send OTP to the NEW email
       const mailOptions = {
         from: process.env.EMAIL_USER,
         to: email,
@@ -495,7 +431,7 @@ app.put('/api/users/:id', async (req, res) => {
       email: user.email, 
       _id: user._id, 
       role: user.role,
-      emailChanged // <--- We send this flag to the frontend!
+      emailChanged
     });
   } catch (err) {
     console.error("🚨 PROFILE UPDATE ERROR:", err); 
@@ -503,26 +439,21 @@ app.put('/api/users/:id', async (req, res) => {
   }
 });
 
-// --- NEW: REQUEST PASSWORD RESET ---
 app.post('/api/forgot-password', async (req, res) => {
   try {
     const { email } = req.body;
     const user = await User.findOne({ email });
     if (!user) return res.status(404).json({ message: "No account with that email found." });
 
-    // 1. Generate a random 6-digit code
     const resetCode = Math.floor(100000 + Math.random() * 900000).toString();
-
     console.log(`\n🚨 DEVELOPER CHEAT CODE: The OTP for ${email} is: ${resetCode}\n`);
     
-    // 2. Save it to the user's database profile (expires in 15 mins)
     user.resetCode = resetCode;
     user.resetCodeExpires = Date.now() + 15 * 60 * 1000; 
     await user.save();
 
-    // 3. Send the email!
     const mailOptions = {
-      from: 'cinnamoncotickets@gmail.com', // Must match your transporter
+      from: 'cinnamoncotickets@gmail.com',
       to: user.email,
       subject: `🔒 Password Reset Code: ${resetCode}`,
       html: `
@@ -537,18 +468,14 @@ app.post('/api/forgot-password', async (req, res) => {
     
     transporter.sendMail(mailOptions).catch(err => console.log("Email error:", err));
     res.json({ message: "Reset code sent to your email!" });
-
   } catch (err) {
     res.status(500).json({ message: "Error sending reset code." });
   }
 });
 
-// --- NEW: VERIFY AND RESET PASSWORD ---
 app.post('/api/reset-password', async (req, res) => {
   try {
     const { email, code, newPassword } = req.body;
-    
-    // Find the user with that email, that exact code, AND ensure the code hasn't expired
     const user = await User.findOne({ 
       email, 
       resetCode: code, 
@@ -557,7 +484,6 @@ app.post('/api/reset-password', async (req, res) => {
 
     if (!user) return res.status(400).json({ message: "Invalid or expired reset code." });
 
-    // Hash the new password and clear the temporary reset codes
     user.password = await bcrypt.hash(newPassword, 10);
     user.resetCode = undefined;
     user.resetCodeExpires = undefined;
@@ -569,13 +495,13 @@ app.post('/api/reset-password', async (req, res) => {
   }
 });
 
-// --- NEW: FETCH A SPECIFIC USER'S SUGGESTIONS ---
 app.get('/api/suggestions/user/:email', async (req, res) => {
   try {
-    // Find all suggestions where the email matches the logged-in user
     const userSuggestions = await Suggestion.find({ email: req.params.email });
     res.json(userSuggestions);
   } catch (err) {
     res.status(500).json({ message: "Error fetching user suggestions" });
   }
 });
+
+app.listen(PORT, () => console.log(`🚀 Server is running on http://localhost:${PORT}`));
