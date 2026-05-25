@@ -30,7 +30,7 @@ const sendCloudEmail = async ({ to, subject, html }) => {
   
   try {
     await axios.post('https://api.resend.com/emails', {
-      from: 'Cinnamon & Co <onboarding@resend.dev>',
+      from: 'Cinnamon & Co <tickets@cinnamonco.publicvm.com>',
       to: Array.isArray(to) ? to : [to], // Formats securely to arrays for API structure validation
       subject: subject,
       html: html
