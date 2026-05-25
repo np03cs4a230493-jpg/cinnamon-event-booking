@@ -34,10 +34,10 @@ function Admin() {
 
       try {
         const [eventRes, statsRes, suggRes, bookingsRes] = await Promise.all([
-          axios.get('http://localhost:5001/api/events'),
-          axios.get('http://localhost:5001/api/admin/analytics'),
-          axios.get('http://localhost:5001/api/admin/suggestions'),
-          axios.get('http://localhost:5001/api/admin/bookings') 
+          axios.get('/api/events'),
+          axios.get('/api/admin/analytics'),
+          axios.get('/api/admin/suggestions'),
+          axios.get('/api/admin/bookings') 
         ]);
 
         setEvents(eventRes.data);
@@ -89,10 +89,10 @@ function Admin() {
 
     try {
       if (editingId) {
-        await axios.put(`http://localhost:5001/api/events/${editingId}`, formData);
+        await axios.put(`/api/events/${editingId}`, formData);
         toast.success("Event Updated Successfully!");
       } else {
-        await axios.post('http://localhost:5001/api/events', formData);
+        await axios.post('/api/events', formData);
         toast.success("Event Created Successfully!");
       }
       setTimeout(() => window.location.reload(), 1500); 
@@ -103,7 +103,7 @@ function Admin() {
 
   const handleAcknowledge = async (id) => {
     try {
-      await axios.patch(`http://localhost:5001/api/suggestions/${id}`, { status: 'accepted' });
+      await axios.patch(`/api/suggestions/${id}`, { status: 'accepted' });
       const acceptedSuggestion = suggestions.find(s => s._id === id);
       if (acceptedSuggestion) {
         setTitle(acceptedSuggestion.title);
@@ -121,7 +121,7 @@ function Admin() {
   const confirmAction = async () => {
     if (deleteModal.type === 'event') {
       try {
-        await axios.delete(`http://localhost:5001/api/events/${deleteModal.id}`);
+        await axios.delete(`/api/events/${deleteModal.id}`);
         setEvents(events.filter(e => e._id !== deleteModal.id));
         setStats({
            ...stats,
@@ -133,7 +133,7 @@ function Admin() {
       }
     } else if (deleteModal.type === 'suggestion') {
       try {
-        await axios.patch(`http://localhost:5001/api/suggestions/${deleteModal.id}`, { status: 'declined' });
+        await axios.patch(`/api/suggestions/${deleteModal.id}`, { status: 'declined' });
         setSuggestions(suggestions.map(s => s._id === deleteModal.id ? { ...s, status: 'declined' } : s));
         toast.success("Suggestion Declined.");
       } catch (err) { 

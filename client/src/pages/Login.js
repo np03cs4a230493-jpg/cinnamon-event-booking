@@ -26,7 +26,7 @@ function Login() {
     }
 
     try {
-      const response = await axios.post('http://localhost:5001/api/login', formData);
+      const response = await axios.post('/api/login', formData);
       localStorage.setItem('user', JSON.stringify(response.data));
       window.dispatchEvent(new Event("storage"));
       toast.success(`Welcome back, ${response.data.username}!`);
@@ -46,7 +46,7 @@ function Login() {
   const handleVerify = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post('http://localhost:5001/api/verify-email', { 
+      const response = await axios.post('/api/verify-email', { 
         email: unverifiedEmail, 
         code: verificationCode 
       });
@@ -62,7 +62,7 @@ function Login() {
 
   const handleGoogleSuccess = async (credentialResponse) => {
     try {
-      const response = await axios.post('http://localhost:5001/api/google-login', {
+      const response = await axios.post('/api/google-login', {
         token: credentialResponse.credential
       });
       localStorage.setItem('user', JSON.stringify(response.data));

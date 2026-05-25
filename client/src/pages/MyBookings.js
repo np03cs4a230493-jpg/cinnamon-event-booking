@@ -16,7 +16,7 @@ function MyBookings() {
 
     const fetchBookings = async () => {
       try {
-        const response = await axios.get(`http://localhost:5001/api/bookings/user/${user._id}`);
+        const response = await axios.get(`/api/bookings/user/${user._id}`);
         setBookings(response.data);
       } catch (err) {
         console.error("Error fetching bookings:", err);

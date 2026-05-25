@@ -24,10 +24,10 @@ const Profile = () => {
     setUser(storedUser);
     setEditData({ username: storedUser.username, email: storedUser.email, password: '' });
 
-    axios.get(`http://localhost:5001/api/bookings/user/${storedUser._id}`)
+    axios.get(`/api/bookings/user/${storedUser._id}`)
       .then(res => setBookings(res.data)).catch(err => console.error(err));
 
-    axios.get(`http://localhost:5001/api/suggestions/user/${storedUser.email}`)
+    axios.get(`/api/suggestions/user/${storedUser.email}`)
       .then(res => setMySuggestions(res.data)).catch(err => console.error(err));
   }, [navigate]);
 
@@ -48,7 +48,7 @@ const Profile = () => {
 
     try {
       const loadingToast = toast.loading("Saving changes...");
-      const response = await axios.put(`http://localhost:5001/api/users/${user._id}`, editData);
+      const response = await axios.put(`/api/users/${user._id}`, editData);
       toast.dismiss(loadingToast);
 
       if (response.data.emailChanged) {
@@ -70,7 +70,7 @@ const Profile = () => {
   const handleVerify = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post('http://localhost:5001/api/verify-email', { email: editData.email, code: verificationCode });
+      const response = await axios.post('/api/verify-email', { email: editData.email, code: verificationCode });
       
       // Update local storage with the new, verified user data
       localStorage.setItem('user', JSON.stringify(response.data.user));

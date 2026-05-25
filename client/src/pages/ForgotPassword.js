@@ -13,7 +13,7 @@ function ForgotPassword() {
   const handleSendCode = async (e) => {
     e.preventDefault();
     try {
-      await axios.post('http://localhost:5001/api/forgot-password', { email });
+      await axios.post('/api/forgot-password', { email });
       toast.success("Reset code sent to your email!");
       setStep(2); 
     } catch (err) {
@@ -24,7 +24,7 @@ function ForgotPassword() {
   const handleResetPassword = async (e) => {
     e.preventDefault();
     try {
-      await axios.post('http://localhost:5001/api/reset-password', { email, code, newPassword });
+      await axios.post('/api/reset-password', { email, code, newPassword });
       toast.success("Password reset successfully! You can now log in.");
       navigate('/login');
     } catch (err) {

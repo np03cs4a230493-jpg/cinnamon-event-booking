@@ -13,7 +13,7 @@ function EventDetails() {
   useEffect(() => {
     const fetchEvent = async () => {
       try {
-        const response = await axios.get(`http://localhost:5001/api/events`);
+        const response = await axios.get(`/api/events`);
         const foundEvent = response.data.find(e => e._id === id);
         setEvent(foundEvent);
       } catch (err) {
@@ -36,7 +36,7 @@ function EventDetails() {
     const finalQuantity = quantity || 1;
 
     try {
-      const res = await axios.post('http://localhost:5001/api/bookings', {
+      const res = await axios.post('/api/bookings', {
         userId: user._id, 
         eventId: event._id,
         quantity: finalQuantity 

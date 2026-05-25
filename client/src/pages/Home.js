@@ -13,7 +13,7 @@ function Home() {
   useEffect(() => {
     const fetchEvents = async () => {
       try {
-        const response = await axios.get('http://localhost:5001/api/events');
+        const response = await axios.get('/api/events');
         
         const smartSortedEvents = response.data.sort((a, b) => {
           const aSoldOut = (a.totalTickets - (a.soldTickets || 0)) <= 0;

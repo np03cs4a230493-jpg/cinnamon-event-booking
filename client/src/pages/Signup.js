@@ -28,7 +28,7 @@ function Signup() {
 
     try {
       const loadingToast = toast.loading("Sending verification code...");
-      await axios.post('http://localhost:5001/api/register', { 
+      await axios.post('/api/register', { 
         username, email, password, adminCode: adminKey 
       });
       toast.dismiss(loadingToast);
@@ -43,7 +43,7 @@ function Signup() {
   const handleVerify = async (e) => {
     e.preventDefault();
     try {
-      await axios.post('http://localhost:5001/api/verify-email', { 
+      await axios.post('/api/verify-email', { 
         email: formData.email, 
         code: verificationCode 
       });

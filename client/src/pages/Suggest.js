@@ -12,7 +12,7 @@ function Suggest() {
     const user = JSON.parse(localStorage.getItem('user'));
     
     try {
-      await axios.post('http://localhost:5001/api/suggestions', {
+      await axios.post('/api/suggestions', {
         ...formData,
         username: user ? user.username : 'Anonymous',
         email: user ? user.email : null 

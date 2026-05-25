@@ -33,7 +33,7 @@ const googleClient = new OAuth2Client("936864795704-0b0qod9dau9912l81prptrstcdll
 
 // MIDDLEWARE
 app.use(cors({
-  origin: "http://localhost:3000", 
+  origin: process.env.FRONTEND_URL || "http://localhost:3000", 
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE"], 
   credentials: true
 }));
@@ -67,7 +67,8 @@ app.get('/api/events', async (req, res) => {
 
 app.post('/api/events', upload.single('image'), async (req, res) => {
   try {
-    const imagePath = req.file ? `http://localhost:5001/uploads/${req.file.filename}` : req.body.image;
+    const baseUrl = process.env.BACKEND_URL || `http://localhost:${PORT}`;
+    const imagePath = req.file ? `${baseUrl}/uploads/${req.file.filename}` : req.body.image;
     const newEvent = new Event({ ...req.body, image: imagePath || 'https://via.placeholder.com/300' });
     await newEvent.save();
     res.status(201).json(newEvent);
@@ -269,7 +270,7 @@ app.post('/api/bookings', async (req, res) => {
     
     // --- SEND THE EMAIL RECEIPT ---
     const mailOptions = {
-      from: 'YOUR_EMAIL@gmail.com', // <--- Must match your Gmail above
+      from: process.env.EMAIL_USER || 'cinnamoncotickets@gmail.com',
       to: user.email,
       subject: `🎟️ Tickets Confirmed: ${event.title}`,
       html: `
@@ -417,17 +418,17 @@ app.delete('/api/suggestions/:id', async (req, res) => {
 app.listen(PORT, () => console.log(`🚀 Server is running on http://localhost:${PORT}`));
 
 // --- NEW: EDIT EVENT ROUTE ---
+// --- UPDATED EDIT EVENT ROUTE ---
 app.put('/api/events/:id', upload.single('image'), async (req, res) => {
   try {
     const updateData = { ...req.body };
     
-    // If the admin uploaded a NEW image, update the path. 
-    // If they left it blank, it just keeps the old image!
     if (req.file) {
-      updateData.image = `http://localhost:5001/uploads/${req.file.filename}`;
+      // FIX: Dynamically prepend the base URL so images render across different hosting domains!
+      const baseUrl = process.env.BACKEND_URL || `http://localhost:${PORT}`;
+      updateData.image = `${baseUrl}/uploads/${req.file.filename}`;
     }
 
-    // Find the event by ID and replace its info with the new stuff
     const updatedEvent = await Event.findByIdAndUpdate(req.params.id, updateData, { new: true });
     res.json(updatedEvent);
   } catch (err) { 
