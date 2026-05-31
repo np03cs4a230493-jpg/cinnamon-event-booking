@@ -14,7 +14,7 @@ axios.defaults.baseURL = process.env.REACT_APP_API_URL || 'http://localhost:5001
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>
-    { {/* Google OAuth Provider enables Google Sign-In throughout the application */}}
+    {/* Google OAuth Provider enables Google Sign-In throughout the application */}
     <GoogleOAuthProvider clientId="936864795704-0b0qod9dau9912l81prptrstcdllmlgf.apps.googleusercontent.com">
       <App />
     </GoogleOAuthProvider>
