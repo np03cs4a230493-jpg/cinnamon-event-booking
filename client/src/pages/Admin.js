@@ -27,7 +27,10 @@ function Admin() {
   const [deleteModal, setDeleteModal] = useState({ isOpen: false, type: '', id: null, itemName: '' });
 
   // Get today's local date in YYYY-MM-DD format
-  const todayString = new Date().toISOString().split('T')[0];
+  const yyyy = today.getFullYear();
+  const mm = String(today.getMonth() + 1).padStart(2, '0');
+  const dd = String(today.getDate()).padStart(2, '0');
+  const todayString = `${yyyy}-${mm}-${dd}`;
 
   useEffect(() => {
     const fetchData = async () => {
