@@ -6,7 +6,7 @@ import toast from 'react-hot-toast';
 const Profile = () => {
   const navigate = useNavigate();
   
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState(null); // Store currently logged-in user information
   const [bookings, setBookings] = useState([]);
   const [mySuggestions, setMySuggestions] = useState([]);
   
@@ -15,7 +15,7 @@ const Profile = () => {
   const [verificationCode, setVerificationCode] = useState('');
   const [editData, setEditData] = useState({ username: '', email: '', password: '' });
 
-  useEffect(() => {
+  useEffect(() => {// Load user profile, bookings, and suggestions when the page opens
     const storedUser = JSON.parse(localStorage.getItem('user'));
     if (!storedUser) {
       navigate('/login');
@@ -31,7 +31,7 @@ const Profile = () => {
       .then(res => setMySuggestions(res.data)).catch(err => console.error(err));
   }, [navigate]);
 
-  const handleSave = async (e) => {
+  const handleSave = async (e) => { // Validate and save profile changes
     e.preventDefault();
     
     const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
@@ -97,10 +97,10 @@ const Profile = () => {
       <div style={{ backgroundColor: '#fff', padding: '35px', borderRadius: '16px', marginBottom: '40px', boxShadow: '0 10px 30px rgba(0,0,0,0.06)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px' }}>
           <h2 style={{ margin: 0, color: '#2c3e50', fontSize: '1.5rem', fontWeight: '700' }}>
-            {step === 2 ? '🔐 Verify New Email' : '👤 Account Details'}
+            {step === 2 ? 'Verify New Email' : 'Account Details'}
           </h2>
           {!isEditing && step === 1 && (
-            <button onClick={() => setIsEditing(true)} style={editBtnStyle}>✏️ Edit Profile</button>
+            <button onClick={() => setIsEditing(true)} style={editBtnStyle}>Edit Profile</button>
           )}
         </div>
 
@@ -134,7 +134,7 @@ const Profile = () => {
               <input type="password" autoComplete="new-password" placeholder="••••••••" value={editData.password} onChange={(e) => setEditData({...editData, password: e.target.value})} style={inputStyle} />
             </div>
             <div style={{ display: 'flex', gap: '15px', marginTop: '10px' }}>
-              <button type="submit" style={saveBtnStyle}>💾 Save Changes</button>
+              <button type="submit" style={saveBtnStyle}>Save Changes</button>
               <button type="button" onClick={() => { setIsEditing(false); setEditData({ username: user.username, email: user.email, password: '' }); }} style={cancelBtnStyle}>✖ Cancel</button>
             </div>
           </form>
@@ -169,7 +169,7 @@ const Profile = () => {
         </div>
       )}
 
-      <h2 style={{ color: '#2c3e50', fontSize: '1.8rem', fontWeight: '800', marginTop: '50px', marginBottom: '25px' }}>💡 My Event Ideas ({mySuggestions.length})</h2>
+      <h2 style={{ color: '#2c3e50', fontSize: '1.8rem', fontWeight: '800', marginTop: '50px', marginBottom: '25px' }}>My Event Ideas ({mySuggestions.length})</h2>
       {mySuggestions.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '40px', backgroundColor: '#fff', borderRadius: '16px', boxShadow: '0 10px 30px rgba(0,0,0,0.04)' }}>
           <p style={{ color: '#7f8c8d', fontSize: '1.1rem', fontWeight: '500', margin: 0 }}>You haven't submitted any ideas yet. Have a cool event in mind?</p>
