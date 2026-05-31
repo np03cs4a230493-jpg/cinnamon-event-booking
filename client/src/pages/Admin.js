@@ -26,6 +26,9 @@ function Admin() {
   // Custom Modal State
   const [deleteModal, setDeleteModal] = useState({ isOpen: false, type: '', id: null, itemName: '' });
 
+  // Get today's local date in YYYY-MM-DD format
+  const todayString = new Date().toISOString().split('T')[0];
+
   useEffect(() => {
     const fetchData = async () => {
       const storedUser = localStorage.getItem('user');
@@ -285,9 +288,10 @@ function Admin() {
               <input type="text" value={title} placeholder="e.g. Latte Art Workshop" required style={inputStyle} onChange={e => setTitle(e.target.value)} />
             </div>
             <div>
-              <label style={labelStyle}>Date</label>
-              <input type="date" value={date} required style={inputStyle} onChange={e => setDate(e.target.value)} />
-            </div>
+      <label style={labelStyle}>Date</label>
+      <input  type="date"  value={date}  min={todayString} // 🔒 Prevents clicking past dates! required  style={inputStyle}  onChange={e => setDate(e.target.value)} 
+           />
+        </div>
             <div>
               <label style={labelStyle}>Price (NPR)</label>
               <input type="number" value={price} placeholder="500" required style={inputStyle} onChange={e => setPrice(e.target.value)} />
