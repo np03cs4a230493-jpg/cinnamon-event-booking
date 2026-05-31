@@ -48,6 +48,9 @@ const sendCloudEmail = async ({ to, subject, html }) => {
 
 // Allow requests from the React frontend while
 // blocking unauthorized domains from accessing the API.
+// ========================================================
+// 🔐 GLOBAL CORS SECURITY MIDDLEWARE
+// ========================================================
 app.use(cors({
   origin: function (origin, callback) {
     if (!origin || origin.includes('vercel.app') || origin.includes('localhost')) {
@@ -57,9 +60,10 @@ app.use(cors({
     }
   },
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  // ADD 'PATCH' INTO THIS ARRAY STRING EXACTLY HERE:
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
-})); 
+}));
 app.use(express.json());
 
 // Establish connection between the Node.js server
