@@ -1,7 +1,7 @@
 import './App.css';
 import React, { useState, useEffect, useRef } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useNavigate } from 'react-router-dom';
-import { Toaster } from 'react-hot-toast'; 
+import toast, { Toaster } from 'react-hot-toast'; // Updated to include toast
 
 // Import Pages
 import Home from './pages/Home';
@@ -23,8 +23,7 @@ function App() {
         
         <Navbar />
         
-        <main style={{ flex: 1 }}> 
-        
+        <main style={{ flex: 1 }}>
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/signup" element={<Signup />} />
@@ -50,7 +49,7 @@ function Navbar() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef(null); 
   const navigate = useNavigate();
-// Check if a user is already logged in
+
   useEffect(() => {
     const checkUser = () => {
       const storedUser = localStorage.getItem('user');
@@ -61,7 +60,6 @@ function Navbar() {
     return () => window.removeEventListener('storage', checkUser);
   }, []);
 
-// Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -72,12 +70,12 @@ function Navbar() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [dropdownRef]);
 
-  // Remove user session and redirect to login page
   const handleLogout = () => {
     localStorage.removeItem('user');
     setUser(null);
     setIsDropdownOpen(false);
     window.dispatchEvent(new Event("storage"));
+    toast.success("Logged out successfully! See you soon. ☕"); // Added popup toast notification
     navigate('/login');
   };
 
@@ -99,7 +97,7 @@ function Navbar() {
         )}
 
         {user ? (
-          <> 
+          <>
             {user.role === 'admin' && (
               <Link to="/admin" style={{ color: '#e74c3c', textDecoration: 'none', fontWeight: 'bold' }}>Admin Panel</Link>
             )}
@@ -169,7 +167,6 @@ function Navbar() {
   );
 }
 
-// --- NEW: Universal style forces both the Link and Button to be perfectly identical ---
 const dropdownItemStyle = {
   padding: '12px 20px', 
   textDecoration: 'none', 
@@ -182,9 +179,9 @@ const dropdownItemStyle = {
   boxSizing: 'border-box',
   width: '100%', 
   margin: 0,
-  fontFamily: 'inherit',  /* Forces button to stop using the OS default font */
+  fontFamily: 'inherit',  
   fontSize: '15px', 
-  lineHeight: '1.5',      /* Forces equal height calculation */
+  lineHeight: '1.5',      
   transition: 'background 0.2s ease'
 };
 
