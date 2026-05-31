@@ -292,10 +292,34 @@ function Admin() {
               <input type="text" value={title} placeholder="e.g. Latte Art Workshop" required style={inputStyle} onChange={e => setTitle(e.target.value)} />
             </div>
             <div>
-      <label style={labelStyle}>Date</label>
-      <input  type="date"  value={date}  min={todayString} // 🔒 Prevents clicking past dates! required  style={inputStyle}  onChange={e => setDate(e.target.value)} 
-           />
-        </div>
+  <label style={labelStyle}>Date</label>
+  <input 
+    type="date" 
+    value={date} 
+    required 
+    style={inputStyle} 
+    onChange={(e) => {
+      const selectedValue = e.target.value;
+      if (!selectedValue) {
+        setDate('');
+        return;
+      }
+
+      // Convert selection strings to local timestamps
+      const selectedDate = new Date(selectedValue);
+      const midnightToday = new Date();
+      midnightToday.setHours(0, 0, 0, 0); // Sets time to start of today
+
+      // 🔒 Safety Guard: Clear out and warn if date is in the past
+      if (selectedDate < midnightToday) {
+        toast.error("Event date cannot be in the past! ☕");
+        setDate(''); 
+      } else {
+        setDate(selectedValue); // Updates state cleanly
+      }
+    }} 
+  />
+</div>
             <div>
               <label style={labelStyle}>Price (NPR)</label>
               <input type="number" value={price} placeholder="500" required style={inputStyle} onChange={e => setPrice(e.target.value)} />
