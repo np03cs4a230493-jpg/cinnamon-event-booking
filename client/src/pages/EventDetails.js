@@ -5,7 +5,7 @@ import StripeCheckout from 'react-stripe-checkout';
 import toast from 'react-hot-toast'; 
 
 function EventDetails() {
-  const { id } = useParams();
+  const { id } = useParams();// Retrieve the event ID from the URL
   const navigate = useNavigate();
   const [event, setEvent] = useState(null);
   const [quantity, setQuantity] = useState(1);
@@ -23,7 +23,7 @@ function EventDetails() {
     fetchEvent();
   }, [id]);
 
-  const handleBooking = async (stripeToken) => {
+  const handleBooking = async (stripeToken) => {// Process ticket booking after successful Stripe payment
     const storedUser = localStorage.getItem('user');
     
     if (!storedUser) {
@@ -36,13 +36,13 @@ function EventDetails() {
     const finalQuantity = quantity || 1;
 
     try {
-       await axios.post('/api/bookings', {
+       await axios.post('/api/bookings', {// Send booking information to the backend
         userId: user._id, 
         eventId: event._id,
         quantity: finalQuantity 
       });
 
-      toast.success(`Payment Successful! Receipt: ${stripeToken.id}`); 
+      toast.success(`Payment Successful! Receipt: ${stripeToken.id}`); // Display booking success message
       navigate('/my-bookings'); 
     } catch (err) {
       toast.error(err.response?.data?.message || "Booking Failed. Please try again."); 
@@ -51,7 +51,7 @@ function EventDetails() {
 
   if (!event) return <div style={{ padding: '20px', textAlign: 'center' }}>Loading details...</div>;
 
-  const ticketsLeft = event.totalTickets - (event.soldTickets || 0);
+  const ticketsLeft = event.totalTickets - (event.soldTickets || 0);// Calculate remaining tickets available for purchase
   const totalPrice = event.price * (quantity || 1);
   const storedUser = localStorage.getItem('user');
   const user = storedUser ? JSON.parse(storedUser) : null;
@@ -107,13 +107,13 @@ function EventDetails() {
               <button 
                 onClick={() => navigate('/login')}
                 style={{ width: '100%', padding: '16px', fontSize: '16px', backgroundColor: '#2c3e50', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', boxShadow: '0 4px 6px rgba(44, 62, 80, 0.2)' }}>
-                🔒 Login to Book
+                 Login to Book
               </button>
             </div>
           ) : user.role === 'admin' ? (
             <div style={{ flex: 1 }}>
               <button disabled style={{ width: '100%', padding: '16px', fontSize: '16px', backgroundColor: '#ecf0f1', color: '#95a5a6', border: 'none', borderRadius: '8px', cursor: 'not-allowed', fontWeight: 'bold' }}>
-                🚫 Admins Cannot Book
+                 Admins Cannot Book
               </button>
             </div>
           ) : ticketsLeft === 0 ? (
@@ -122,7 +122,7 @@ function EventDetails() {
             </button>
           ) : (
             <div style={{ flex: 1 }}>
-              <StripeCheckout
+              <StripeCheckout  // Open Stripe payment window and process payment
                 stripeKey="pk_test_51TGBAZHSmiO8YkaXeL7kxw15MiwDLwiJHyVKTuBY5ReG24wsdvfXSsMlDrVhAD8rMsC5nTGrlLxrEukaMXdI3hde00h0HqZtzq"
                 token={handleBooking} 
                 name="Cinnamon & Co."
@@ -134,7 +134,7 @@ function EventDetails() {
                 <button style={{ width: '100%', padding: '16px', fontSize: '16px', backgroundColor: '#6772e5', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', boxShadow: '0 4px 15px rgba(103, 114, 229, 0.3)', transition: 'transform 0.2s ease' }}
                         onMouseOver={(e) => e.target.style.transform = 'translateY(-2px)'}
                         onMouseOut={(e) => e.target.style.transform = 'translateY(0)'}>
-                  💳 Pay NPR {totalPrice} Securely
+                   Pay NPR {totalPrice} Securely
                 </button>
               </StripeCheckout>
             </div>

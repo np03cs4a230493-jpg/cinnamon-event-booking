@@ -23,7 +23,8 @@ function App() {
         
         <Navbar />
         
-        <main style={{ flex: 1 }}>
+        <main style={{ flex: 1 }}> 
+        
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/signup" element={<Signup />} />
@@ -49,7 +50,7 @@ function Navbar() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef(null); 
   const navigate = useNavigate();
-
+// Check if a user is already logged in
   useEffect(() => {
     const checkUser = () => {
       const storedUser = localStorage.getItem('user');
@@ -60,6 +61,7 @@ function Navbar() {
     return () => window.removeEventListener('storage', checkUser);
   }, []);
 
+// Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -70,6 +72,7 @@ function Navbar() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [dropdownRef]);
 
+  // Remove user session and redirect to login page
   const handleLogout = () => {
     localStorage.removeItem('user');
     setUser(null);
@@ -96,7 +99,7 @@ function Navbar() {
         )}
 
         {user ? (
-          <>
+          <> 
             {user.role === 'admin' && (
               <Link to="/admin" style={{ color: '#e74c3c', textDecoration: 'none', fontWeight: 'bold' }}>Admin Panel</Link>
             )}

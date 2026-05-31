@@ -7,7 +7,7 @@ function MyBookings() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const storedUser = localStorage.getItem('user');
+    const storedUser = localStorage.getItem('user');// Retrieve logged-in user information from local storage
     if (!storedUser) {
       navigate('/login');
       return;
@@ -16,7 +16,7 @@ function MyBookings() {
 
     const fetchBookings = async () => {
       try {
-        const response = await axios.get(`/api/bookings/user/${user._id}`);
+        const response = await axios.get(`/api/bookings/user/${user._id}`);// Request booking history from the backend
         setBookings(response.data);
       } catch (err) {
         console.error("Error fetching bookings:", err);

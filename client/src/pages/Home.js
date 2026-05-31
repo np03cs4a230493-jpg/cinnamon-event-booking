@@ -2,19 +2,19 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 
-function Home() {
-  const [events, setEvents] = useState([]);
+function Home() {// Home page component responsible for displaying all available events
+  const [events, setEvents] = useState([]);// Store all events retrieved from the database
   const [loading, setLoading] = useState(true);
   
   // --- STATE FOR FILTERS ---
   const [filterDate, setFilterDate] = useState(''); 
-  const [searchQuery, setSearchQuery] = useState(''); // <--- NEW: Search state
+  const [searchQuery, setSearchQuery] = useState(''); 
 
-  useEffect(() => {
+  useEffect(() => {// Load events when the homepage is first displayed
     const fetchEvents = async () => {
       try {
         const response = await axios.get('/api/events');
-        
+       // Display available events first and sort them by popularity 
         const smartSortedEvents = response.data.sort((a, b) => {
           const aSoldOut = (a.totalTickets - (a.soldTickets || 0)) <= 0;
           const bSoldOut = (b.totalTickets - (b.soldTickets || 0)) <= 0;
@@ -45,7 +45,7 @@ function Home() {
 
   // --- UPGRADED FILTER LOGIC ---
   const displayedEvents = events.filter(event => {
-    // 1. Check Date Filter
+    // Filter events based on selected date and search query
     let matchesDate = true;
     if (filterDate) {
       const eventDate = new Date(event.date);
@@ -68,7 +68,7 @@ function Home() {
     return matchesDate && matchesSearch;
   });
 
-  const featuredEvents = displayedEvents.filter(e => e.isFeatured);
+  const featuredEvents = displayedEvents.filter(e => e.isFeatured);// Extract events marked as featured by administrators
   const regularEvents = displayedEvents.filter(e => !e.isFeatured);
 
   if (loading) return <div style={{ textAlign: 'center', padding: '50px', fontSize: '1.2rem', color: '#555' }}>Loading events...</div>;

@@ -42,11 +42,12 @@ const sendCloudEmail = async ({ to, subject, html }) => {
     });
     console.log(`✅ Cloud HTTPS Email sent successfully to: ${to}`);
   } catch (err) {
-    console.error("❌ Resend API Error Details:", err.response?.data || err.message);
+    console.error(" Resend API Error Details:", err.response?.data || err.message);
   }
 };
 
-// GLOBAL CORS CONFIGURATION (Dynamic for Local and Production URLs)
+// Allow requests from the React frontend while
+// blocking unauthorized domains from accessing the API.
 app.use(cors({
   origin: function (origin, callback) {
     if (!origin || origin.includes('vercel.app') || origin.includes('localhost')) {
@@ -61,7 +62,8 @@ app.use(cors({
 })); 
 app.use(express.json());
 
-// DATABASE CONNECTION
+// Establish connection between the Node.js server
+// and MongoDB database before processing requests.
 mongoose.connect(process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/cinnamon_db')
   .then(() => console.log("✅ MongoDB Connected Successfully!"))
   .catch((err) => console.error("❌ MongoDB Connection Error:", err));
@@ -70,6 +72,8 @@ mongoose.connect(process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/cinnamon_db
 const uploadDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadDir)){ fs.mkdirSync(uploadDir); }
 
+// Configure Multer to store uploaded event images
+// inside the uploads folder with a unique filename.
 const storage = multer.diskStorage({
   destination: (req, file, cb) => { cb(null, 'uploads/'); },
   filename: (req, file, cb) => { cb(null, 'event-' + Date.now() + path.extname(file.originalname)); }
@@ -88,7 +92,7 @@ app.get('/api/events', async (req, res) => {
 
 app.post('/api/events', upload.single('image'), async (req, res) => {
   try {
-    // 🔥 DYNAMICALLY DETECT IF LOCAL OR LIVE URL:
+    // DYNAMICALLY DETECT IF LOCAL OR LIVE URL:
     const protocol = req.headers['x-forwarded-proto'] || req.protocol;
     const baseUrl = `${protocol}://${req.get('host')}`;
     
@@ -107,20 +111,22 @@ app.delete('/api/events/:id', async (req, res) => {
 });
 
 // 1. REGISTER ROUTE (WITH CLOUD-SAFE EMAIL API HELPER)
+
 app.post('/api/register', async (req, res) => {
   try {
     const { username, email, password, adminCode } = req.body;
-
+// Check if another account already uses this email address
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(400).json({ message: "User already exists with this email." });
     }
 
+// Hash the user's password before storing it in the database
     const hashedPassword = await bcrypt.hash(password, 10);
     const role = adminCode === 'Lemonade' ? 'admin' : 'user'; 
     const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
 
-    console.log(`\n☕ [DEVELOPER TESTING] New Signup OTP for ${email} is: ${verificationCode}\n`);
+    console.log(`\n [DEVELOPER TESTING] New Signup OTP for ${email} is: ${verificationCode}\n`);
     
     const newUser = new User({ 
       username, 
@@ -140,7 +146,7 @@ app.post('/api/register', async (req, res) => {
       to: email,
       subject: 'Verify your Cinnamon & Co. Account',
       html: `
-        <h2>Welcome to Cinnamon & Co.! ☕</h2>
+        <h2>Welcome to Cinnamon & Co.! </h2>
         <p>Your account has been created. Please use the 6-digit code below to verify your email address:</p>
         <h1 style="font-size: 40px; letter-spacing: 5px; color: #d35400;">${verificationCode}</h1>
         <p>If you did not request this, please ignore this email.</p>
@@ -153,6 +159,9 @@ app.post('/api/register', async (req, res) => {
   }
 });
 
+// Verify that the code entered by the user
+// matches the code stored in the database.
+// If successful, activate the account.
 app.post('/api/verify-email', async (req, res) => {
   try {
     const { email, code } = req.body;
@@ -175,6 +184,8 @@ app.post('/api/verify-email', async (req, res) => {
   }
 });
 
+// Compare the entered password with the
+// encrypted password stored in the database.
 app.post('/api/login', async (req, res) => {
   try {
     const loginString = req.body.identifier || req.body.email;
@@ -202,6 +213,9 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
+// Verify the Google token received from the frontend.
+// If the user does not already exist,
+// automatically create a new verified account.
 app.post('/api/google-login', async (req, res) => {
   try {
     const { token } = req.body;
@@ -289,6 +303,9 @@ app.get('/api/bookings/user/:userId', async (req, res) => {
     res.json(bookings);
   } catch (err) { res.status(500).json({ message: "Error fetching bookings" }); }
 });
+
+// Calculate revenue, tickets sold,
+// remaining tickets, and sales percentage for each event.
 
 app.get('/api/admin/analytics', async (req, res) => {
   try {
@@ -421,7 +438,7 @@ app.put('/api/users/:id', async (req, res) => {
         to: email,
         subject: 'Verify your new email for Cinnamon & Co.',
         html: `
-          <h2>Cinnamon & Co. Security ☕</h2>
+          <h2>Cinnamon & Co. Security </h2>
           <p>You recently changed your email address. Please use the 6-digit code below to verify it:</p>
           <h1 style="font-size: 40px; letter-spacing: 5px; color: #d35400;">${user.verificationCode}</h1>
           <p>If you did not make this change, please contact support immediately.</p>
@@ -517,4 +534,4 @@ app.get('/api/suggestions/user/:email', async (req, res) => {
   }
 });
 
-app.listen(PORT, () => console.log(`🚀 Server is running on http://localhost:${PORT}`));
+app.listen(PORT, () => console.log(` Server is running on http://localhost:${PORT}`));

@@ -3,15 +3,15 @@ import axios from 'axios';
 import { useNavigate, Link } from 'react-router-dom';
 import toast from 'react-hot-toast'; 
 
-function Signup() {
-  const navigate = useNavigate();
-  const [step, setStep] = useState(1); // 1 = Details, 2 = Verification Code
-  const [formData, setFormData] = useState({ username: '', email: '', password: '', adminKey: '' });
-  const [verificationCode, setVerificationCode] = useState('');
+function Signup() {// Signup page component
+  const navigate = useNavigate();// Used to redirect users after successful actions
+  const [step, setStep] = useState(1); // Control whether the registration form or OTP verification form is displayed
+  const [formData, setFormData] = useState({ username: '', email: '', password: '', adminKey: '' }); // Store user registration information
+  const [verificationCode, setVerificationCode] = useState(''); // Store the OTP entered by the user during email verification
 
   // --- STEP 1: SUBMIT DETAILS & SEND CODE ---
-  const handleRegister = async (e) => {
-    e.preventDefault();
+  const handleRegister = async (e) => {// Validate user information and create a new account
+    e.preventDefault();// Prevent page refresh during form submission
     const { username, email, password, adminKey } = formData;
 
     const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
@@ -20,7 +20,7 @@ function Signup() {
       return; 
     }
 
-    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/; // Ensure password meets minimum security requirements
     if (!passwordRegex.test(password)) {
       toast.error("Password must be 8+ characters and include uppercase, lowercase, a number, and a special character."); 
       return; 
@@ -28,7 +28,7 @@ function Signup() {
 
     try {
       const loadingToast = toast.loading("Sending verification code...");
-      await axios.post('/api/register', { 
+      await axios.post('/api/register', { // Send registration information to the backend
         username, email, password, adminCode: adminKey 
       });
       toast.dismiss(loadingToast);
@@ -43,7 +43,7 @@ function Signup() {
   const handleVerify = async (e) => {
     e.preventDefault();
     try {
-      await axios.post('/api/verify-email', { 
+      await axios.post('/api/verify-email', { // Send verification code to the backend for validation
         email: formData.email, 
         code: verificationCode 
       });
